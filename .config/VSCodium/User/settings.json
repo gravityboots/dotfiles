@@ -1,0 +1,157 @@
+{
+    "workbench.colorTheme": "Taipei Night",
+    "workbench.iconTheme": "catppuccin-mocha",
+    "editor.fontFamily": "'JetBrainsMono Nerd Font', 'GeistMono Nerd Font', monospace",
+    "terminal.integrated.fontLigatures.fallbackLigatures": [
+        "<--",
+        "<---",
+        "<<-",
+        "<-",
+        "->",
+        "->>",
+        "-->",
+        "--->",
+        "<==",
+        "<===",
+        "<<=",
+        "<=",
+        "=>",
+        "=>>",
+        "==>",
+        "===>",
+        ">=",
+        ">>=",
+        "<->",
+        "<-->",
+        "<--->",
+        "<---->",
+        "<=>",
+        "<==>",
+        "<===>",
+        "<====>",
+        "::",
+        ":::",
+        "<~~",
+        "</",
+        "</>",
+        "/>",
+        "~~>",
+        "==",
+        "!=",
+        "/=",
+        "~=",
+        "<>",
+        "===",
+        "!==",
+        "!===",
+        "<:",
+        ":=",
+        "*=",
+        "*+",
+        "<*",
+        "<*>",
+        "*>",
+        "<|",
+        "<|>",
+        "|>",
+        "+*",
+        "=*",
+        "=:",
+        ":>",
+        "/*",
+        "*/",
+        "+++",
+        "<!--",
+        "<!---"
+    ],
+    "editor.fontLigatures": true,
+    "window.zoomLevel": 0.5,
+    "code-runner.runInTerminal": true,
+    "editor.fontSize": 13,
+    "claudeCode.preferredLocation": "panel",
+    "workbench.editorAssociations": {
+        "*.copilotmd": "vscode.markdown.preview.editor",
+        "{git,gitlens,chat-editing-snapshot-text-model,copilot,git-graph,git-graph-3}:/**/*.qrc": "default",
+        "*.qrc": "qt-core.qrcEditor",
+        "*.pdf": "pdf.view"
+    },
+    "qt-core.additionalQtPaths": [
+        {
+            "name": "Qt-5.15.18-linux-g++_from_PATH",
+            "path": "/usr/bin/qmake"
+        }
+    ],
+    "explorer.confirmDelete": false,
+    "qt-qml.doNotAskForQmllsDownload": true,
+    "editor.inlayHints.enabled": "off",
+    // below from windows vscode
+    "explorer.confirmDragAndDrop": false,
+    "python.createEnvironment.trigger": "off",
+    "editor.tokenColorCustomizations": { // Below makes italics go away, see Tokyo Night Extension for more details (note by me)
+        "[Tokyo Night]": { // or "[Tokyo Night Storm]"
+            "textMateRules": [{
+                "scope": [
+                    "comment",
+                    "meta.var.expr storage.type",
+                    "keyword.control.flow",
+                    "keyword.control.return",
+                    "meta.directive.vue punctuation.separator.key-value.html",
+                    "meta.directive.vue entity.other.attribute-name.html",
+                    "tag.decorator.js entity.name.tag.js",
+                    "tag.decorator.js punctuation.definition.tag.js",
+                    "storage.modifier"
+                ],
+                "settings": {
+                    "fontStyle": ""
+                }
+            }]
+        },
+        "[Taipei Night]": { // or "[Tokyo Night Storm]"
+            "textMateRules": [{
+                "scope": [
+                    "comment",
+                    "meta.var.expr storage.type",
+                    "keyword.control.flow",
+                    "keyword.control.return",
+                    "meta.directive.vue punctuation.separator.key-value.html",
+                    "meta.directive.vue entity.other.attribute-name.html",
+                    "tag.decorator.js entity.name.tag.js",
+                    "tag.decorator.js punctuation.definition.tag.js",
+                    "storage.modifier"
+                ],
+                "settings": {
+                    "fontStyle": ""
+                }
+            }]
+        },
+        "[Tokyo Night Blackout]": {
+            "textMateRules": [
+                {
+                    "scope": "comment, punctuation.definition.comment, string.quoted.docstring.multi.python, punctuation.definition.string.begin.python, punctuation.definition.string.end.python",
+                    "settings": {
+                        "foreground": "#51597D",
+                        "fontStyle": ""
+                    }
+                },
+            ]
+        }
+    },
+    "terminal.integrated.env.windows": {},
+    "console-ninja.featureSet": "Community",
+    "redhat.telemetry.enabled": false,
+    "security.workspace.trust.untrustedFiles": "open",
+    "liveServer.settings.donotShowInfoMsg": true,
+    "material-icon-theme.saturation": 0.85,
+    "terminal.integrated.enableMultiLinePasteWarning": "never",
+    "spyglassmc.env.gameVersion": "Latest snapshot",
+    "vscord.app.name": "VSCodium", // modified from windows
+    "vscord.app.privacyMode.enable": true,
+    "explorer.confirmPasteNative": false,
+    "github.copilot.nextEditSuggestions.enabled": false,
+    "editor.inlineSuggest.edits.showCollapsed": true,
+    "gitlens.ai.model": "vscode",
+    "gitlens.ai.vscode.model": "copilot:gpt-4.1",
+    "chat.viewSessions.orientation": "stacked",
+    "chat.disableAIFeatures": false,
+    "terminal.integrated.initialHint": false
+}

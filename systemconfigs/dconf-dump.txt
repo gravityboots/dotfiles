@@ -1,0 +1,237 @@
+[apps/seahorse/listing]
+keyrings-selected=['pkcs11:model=p11-kit-trust;manufacturer=PKCS%2311%20Kit;serial=1;token=Default%20Trust']
+
+[apps/seahorse/windows/key-manager]
+height=968
+width=946
+
+[be/alexandervanhee/gradia]
+background-mode='none'
+draw-mode='PEN'
+gradient-state='{"mode": "linear", "steps": [[0.0, "rgb(87,227,137)"], [1.0, "rgb(53,132,228)"]], "angle": 135}'
+image-padding=5
+tool-config={'tool_highlighter': '{"mode": "HIGHLIGHTER", "size": 14, "primary_color": [0.96, 0.83, 0.18, 0.4], "fill_color": [1.0, 1.0, 1.0, 1.0], "border_color": [0.0, 0.0, 0.0, 1.0]}', 'tool_number': '{"mode": "NUMBER", "size": 14, "primary_color": [0.0, 0.0, 0.0, 1.0], "fill_color": [1.0, 1.0, 1.0, 1.0], "border_color": [0.0, 0.0, 0.0, 0.0]}', 'tool_circle': '{"mode": "CIRCLE", "size": 14, "primary_color": [1.0, 1.0, 1.0, 1.0], "fill_color": [1.0, 1.0, 1.0, 1.0], "border_color": [0.0, 0.0, 0.0, 1.0]}', 'tool_square': '{"mode": "SQUARE", "size": 14, "primary_color": [1.0, 1.0, 1.0, 1.0], "fill_color": [1.0, 1.0, 1.0, 1.0], "border_color": [0.0, 0.0, 0.0, 1.0]}', 'tool_arrow': '{"mode": "ARROW", "size": 14, "primary_color": [0.0, 0.0, 0.0, 1.0], "fill_color": [1.0, 1.0, 1.0, 1.0], "border_color": [0.0, 0.0, 0.0, 1.0]}', 'tool_line': '{"mode": "LINE", "size": 14, "primary_color": [0.0, 0.0, 0.0, 1.0], "fill_color": [1.0, 1.0, 1.0, 1.0], "border_color": [0.0, 0.0, 0.0, 1.0]}', 'tool_pen': '{"mode": "PEN", "size": 14, "primary_color": [0.8799999952316284, 0.10999999940395355, 0.14000000059604645, 1.0], "fill_color": [1.0, 1.0, 1.0, 1.0], "border_color": [0.0, 0.0, 0.0, 1.0], "font": "Adwaita Sans"}'}
+
+[com/github/stunkymonkey/nautilus-open-any-terminal]
+flatpak='system'
+keybindings='<Ctrl><Alt>t'
+new-tab=true
+terminal='kitty'
+
+[org/blueman/general]
+window-properties=[944, 1012, 0, 0]
+
+[org/gnome/2048]
+cols=4
+rows=4
+
+[org/gnome/Chess]
+board-side='current'
+height=550
+maximized=true
+move-format='san'
+piece-theme='simple'
+show-numbering=true
+width=700
+
+[org/gnome/Loupe]
+show-properties=false
+
+[org/gnome/Mines]
+window-height=400
+window-is-maximized=true
+window-width=600
+
+[org/gnome/Music]
+window-maximized=true
+
+[org/gnome/Showtime/State]
+is-maximized=true
+looping=false
+
+[org/gnome/TextEditor]
+auto-indent=true
+custom-font='GeistMono Nerd Font Mono Medium 10'
+highlight-current-line=true
+restore-session=false
+show-line-numbers=true
+show-map=false
+show-right-margin=false
+style-scheme='Adwaita-dark'
+tab-width=uint32 4
+use-system-font=false
+
+[org/gnome/Weather]
+locations=[<(uint32 2, <('Bangalore', 'VOBG', true, [(0.22601989378717041, 1.3555659188172149)], [(0.22631101470640302, 1.3537937114947398)])>)>, <(uint32 2, <('Hyderabad', 'VOHY', true, [(0.30455995447301049, 1.3695016922159813)], [(0.30325580954933529, 1.3696374264719091)])>)>, <(uint32 2, <('Chennai', 'VOMM', true, [(0.22689280275926285, 1.3994631660730223)], [(0.22834723798482726, 1.4012084953250166)])>)>, <(uint32 2, <('Tokyo', 'RJTI', true, [(0.62191898430954862, 2.4408429589140699)], [(0.62282074357417661, 2.4391218722853854)])>)>, <(uint32 2, <('Munich', 'EDDM', false, [(0.84386669333925834, 0.20565795770890102)], @a(dd) [])>)>, <(uint32 2, <('London', 'EGWU', false, [(0.89971722940307675, -0.007272211034407213)], [(0.89971722940307675, -0.007272211034407213)])>)>, <(uint32 2, <('New York', 'KNYC', true, [(0.71180344078725644, -1.2909618758762367)], [(0.71059804659265924, -1.2916478949920254)])>)>]
+window-height=-1
+window-maximized=true
+window-width=-1
+
+[org/gnome/bijiben]
+window-maximized=true
+window-position=(103, 103)
+window-size=(946, 968)
+
+[org/gnome/calculator]
+accuracy=12
+base=10
+button-mode='advanced'
+currency-display='name'
+favorite-currencies=['CAD', 'EUR', 'CHF', 'GBP', 'HKD', 'USD', 'INR', 'SGD', 'AUD']
+refresh-interval=86400
+show-thousands=true
+source-units=['degree', 'USD']
+target-units=['radian', 'INR']
+unit-category='currency'
+window-maximized=true
+window-size=(838, -1)
+
+[org/gnome/calendar]
+active-view='month'
+window-maximized=true
+window-size=(768, 600)
+
+[org/gnome/clocks/state/window]
+maximized=true
+panel-id='world'
+size=(870, 690)
+
+[org/gnome/desktop/a11y/applications]
+screen-keyboard-enabled=false
+
+[org/gnome/desktop/interface]
+color-scheme='prefer-dark'
+cursor-size=24
+cursor-theme='default'
+font-antialiasing='rgba'
+font-hinting='slight'
+font-name='Adwaita Sans 10'
+font-rgba-order='rgb'
+gtk-theme='Tokyonight-Dark'
+icon-theme='Adwaita'
+text-scaling-factor=1.2
+toolbar-icons-size='large'
+toolbar-style='both-horiz'
+
+[org/gnome/desktop/sound]
+event-sounds=true
+input-feedback-sounds=false
+
+[org/gnome/evince/default]
+continuous=true
+dual-page=false
+dual-page-odd-left=false
+enable-spellchecking=true
+fullscreen=false
+inverted-colors=false
+show-sidebar=true
+sidebar-page='thumbnails'
+sidebar-size=153
+sizing-mode='automatic'
+
+[org/gnome/gnome-screenshot]
+delay=0
+include-pointer=false
+
+[org/gnome/gnome-system-monitor]
+current-tab='resources'
+maximized=true
+show-dependencies=false
+show-whose-processes='user'
+window-height=720
+window-width=800
+
+[org/gnome/gnome-system-monitor/proctree]
+col-26-visible=false
+col-26-width=0
+
+[org/gnome/maps]
+last-viewed-location=[14.609886175002373, 77.532597656975383]
+map-type='MapsVectorSource'
+show-scale=true
+transportation-type='pedestrian'
+window-maximized=true
+zoom-level=4
+
+[org/gnome/meld/window-state]
+height=970
+is-maximized=true
+width=952
+
+[org/gnome/nautilus/icon-view]
+captions=['size', 'none', 'none']
+default-zoom-level='medium'
+
+[org/gnome/nautilus/list-view]
+use-tree-view=true
+
+[org/gnome/nautilus/preferences]
+date-time-format='detailed'
+default-folder-viewer='icon-view'
+migrated-gtk-settings=true
+show-create-link=true
+show-delete-permanently=true
+
+[org/gnome/nautilus/window-state]
+initial-size=(890, 550)
+maximized=true
+
+[org/gnome/papers]
+night-mode=false
+
+[org/gnome/papers/default]
+annot-color='yellow'
+continuous=true
+dual-page=false
+dual-page-odd-left=true
+enable-spellchecking=true
+eraser-mode-objects='true'
+highlight-color='yellow'
+highlight-stroke=2.0
+pen-color='blue'
+pen-stroke=1.0
+show-sidebar=false
+sidebar-page='thumbnails'
+sizing-mode='automatic'
+text-color='blue'
+window-maximized=true
+
+[org/gnome/software]
+check-timestamp=int64 1779165160
+first-run=false
+
+[org/gtk/gtk4/settings/color-chooser]
+custom-colors=[(0.92156863212585449, 0.30196079611778259, 0.29411765933036804, 1.0)]
+selected-color=(true, 0.92156863212585449, 0.30196079611778259, 0.29411765933036804, 1.0)
+
+[org/gtk/gtk4/settings/file-chooser]
+date-format='regular'
+location-mode='path-bar'
+show-hidden=true
+sidebar-width=140
+sort-column='name'
+sort-directories-first=true
+sort-order='ascending'
+type-format='category'
+view-type='list'
+
+[org/gtk/settings/color-chooser]
+custom-colors=[(0.094117647058823528, 0.35294117647058826, 0.38823529411764707, 1.0)]
+selected-color=(true, 0.094117647058823528, 0.35294117647058826, 0.38823529411764707, 1.0)
+
+[org/gtk/settings/file-chooser]
+date-format='regular'
+location-mode='path-bar'
+show-hidden=true
+show-size-column=true
+show-type-column=true
+sidebar-width=194
+sort-column='name'
+sort-directories-first=true
+sort-order='descending'
+type-format='category'
+window-position=(0, 0)
+window-size=(952, 970)
+
+[org/sigxcpu/feedbackd]
+profile='full'

@@ -1,0 +1,6 @@
+[config]
+# matugen needs this section to exist, even if empty
+
+[templates.quickshell-overview]
+input_path  = "~/.config/matugen/templates/quickshell-overview.qml"
+output_path = "~/.config/quickshell/overview/common/Appearance.colors.qml"
