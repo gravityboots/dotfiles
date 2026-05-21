@@ -1,6 +1,8 @@
 # System Setup Recovery Notes
 
+
 ## Order of operations on fresh CachyOS install
+
 
 1. Boot fresh CachyOS install
 2. Get terminal access, install yadm + git: `sudo pacman -S yadm git`
@@ -19,12 +21,17 @@
    - Reboot to BIOS, enable secure boot
 7. Reboot, pick CachyOS from rEFInd
 
+
 ## Critical gotchas
+
+
 - netbird: keep service disabled or it hijacks DNS
 - spotify: launch via ~/.local/share/applications/spotify.desktop for correct scaling
 - noctalia: do NOT populate bar.screenOverrides in settings.json — GUI edits get masked
 
+
 ## Mounting Windows partitions
+
 
 Your Windows install is on /dev/nvme1n1p3 (NTFS). To auto-mount on boot:
 
@@ -58,7 +65,9 @@ Your Windows install is on /dev/nvme1n1p3 (NTFS). To auto-mount on boot:
 7. Optional: also mount the Windows ESP (/dev/nvme1n1p1) read-only for inspection.
    Don't write to it.
 
+
 ## Bluetooth and audio setup
+
 
 ### Audio basics (PipeWire on CachyOS)
 PipeWire should work out of the box. Verify:
@@ -127,3 +136,32 @@ The script at /usr/local/bin/mute-toggle.sh keeps the keyboard mute LED in sync 
   bindl = , XF86AudioMute, exec, /usr/local/bin/mute-toggle.sh
 - The script itself needs to be restored to /usr/local/bin/ (consider adding it to systemconfigs/ if not already)
 
+
+## Debug commands
+
+
+Audio/bluetooth weirdness:
+  wpctl status
+  systemctl --user restart wireplumber
+  journalctl --user -u wireplumber -b | tail -50
+
+Noctalia misbehaving:
+  qs -c noctalia-shell 2>&1 | tee /tmp/noctalia-crash.log
+  qs -c noctalia-shell ipc show     # list available IPC calls
+
+Quickshell config discovery:
+  qs -p ~/.config/quickshell/<name>/shell.qml   # bypass auto-discovery
+
+Mouse/input dead after suspend:
+  sudo dmesg | tail -50
+  hyprctl devices
+
+AUR package built against old library:
+  cd /tmp && git clone https://aur.archlinux.org/<pkg>.git && cd <pkg> && makepkg -si --clean
+
+Hyprland namespace lookup for layerrules:
+  hyprctl layers   # run with target shell visible on screen
+
+Secure boot sanity check:
+  sudo sbctl status
+  sudo sbctl verify

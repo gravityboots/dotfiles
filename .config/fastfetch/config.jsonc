@@ -1,80 +1,118 @@
+// From https://github.com/uzvg/dotfiles/blob/main/home/private_dot_config/fastfetch/config.jsonc
 
-
+// ─────────────────────────────────────────────────
+// Logo generated with chafa
+// Command:
+//   chafa --symbols all -c full --preprocess on chafa.png -s 40x40 >! logo.txt
+// ─────────────────────────────────────────────────
 {
-    "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
-    "logo": {
-        "type": "command-raw",
-        "source": "pokemon-colorscripts-go --no-title",
-        "padding": {
-            "top": 2,
-            "left": 2,
-            "right": 8
-        }
+  "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
+  "logo": {
+    // "type": "builtin",
+    "type": "kitty-direct",
+    "source": "~/.config/fastfetch/logo1r.png",
+    "width": 20,
+      "padding": {
+        "top": 0,
+        "left": 0,
+        "right": 3
+      }
+  },
+
+  // ─────────────────────────────────────────────────
+  // Global display settings
+  //
+  // keyWidth keeps the key column aligned by forcing a fixed width.
+  // The current layout assumes a consistent visible width for each key:
+  //   "  icon  Label" = 2 spaces + 2-wide icon + 2 spaces + label padding
+  // ─────────────────────────────────────────────────
+  "display": {
+    "separator": " → ",
+    "key": {
+      "width": 18
     },
-    "display": {
-        "separator": " 󰁔 ",
-        "color": {
-            "separator": "90",
-            "keys": "blue",
-            "title": "cyan"
-        }
+    "color": {
+      "keys": "blue"
+    }
+  },
+
+  // ─────────────────────────────────────────────────
+  // Modules
+  //
+  // Key format convention:
+  //   " icon  Label  "
+  //   └1sp┘└icon┘└2sp┘└─ label padded for alignment ─┘
+  // Nerd Font icons are treated as 2-column wide for alignment.
+  // ─────────────────────────────────────────────────
+  "modules": [
+    // user
+    {
+      "type": "title",
+      "keyWidth": 0,
+      "color": {
+        "user": "bright_blue",
+        "at": "white",
+        "host": "bright_blue"
+      }
     },
-    "modules": [
-        {
-            "type": "title",
-            "format": "{user-name}@{host-name}"
-        },
-        {
-            "type": "separator",
-            "string": "─────────────────"
-        },
-        {
-            "type": "os",
-            "key": "󰌽 os"
-        },
-        {
-            "type": "kernel",
-            "key": " kernel"
-        },
-        {
-            "type": "packages",
-            "key": "󰏖 pkgs"
-        },
-        {
-            "type": "shell",
-            "key": " shell"
-        },
-        {
-            "type": "wm",
-            "key": "󰨇 wm"
-        },
-        {
-            "type": "terminal",
-            "key": " term"
-        },
-        {
-            "type": "cpu",
-            "key": " cpu"
-        },
-        {
-            "type": "gpu",
-            "key": "󰍛 gpu"
-        },
-        {
-            "type": "memory",
-            "key": " ram"
-        },
-        {
-            "type": "uptime",
-            "key": "󰅐 uptime"
-        },
-        {
-            "type": "separator",
-            "string": "─────────────────"
-        },
-        {
-            "type": "colors",
-            "symbol": "circle"
-        }
-    ]
+    {
+      "type": "custom",
+      "format": "\u001b[90m⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶"
+    },
+
+    "break",
+
+    // Separator
+
+    // System
+    // { "type": "custom", "format": "\u001b[1;33m   System\u001b[0m", },
+    { "type": "os", "key": " 󰻀  OS     ", "keyColor": "cyan" },
+    { "type": "kernel", "key": " 󰌢  Kernel ", "keyColor": "cyan" },
+    // { "type": "bios", "key": " 󰖙  BIOS   ", "keyColor": "cyan", },
+    { "type": "packages", "key": " 󰏖  Pkgs   ", "keyColor": "cyan" },
+    { "type": "shell", "key": " 󰆍  Shell  ", "keyColor": "cyan" },
+
+    "break",
+
+    // Hardware
+    // { "type": "custom", "format": "\u001b[1;32m 󰌢  Hardware\u001b[0m", },
+    { "type": "host", "key": " 󰍹  Machine", "keyColor": "green" },
+    { "type": "cpu", "key": " 󰻠  CPU    ", "keyColor": "green", "showPeCoreCount": true },
+    { "type": "gpu", "key": " 󰢮  GPU    ", "keyColor": "green", "detectionMethod": "auto" },
+    // { "type": "memory", "key": " 󰍛  RAM    ", "keyColor": "green" },
+    // { "type": "swap", "key": " 󰓡  Swap   ", "keyColor": "green" },
+    // { "type": "disk", "key": " 󰋊  Disk   ", "keyColor": "green", "folders": "/" },
+    
+        "break",
+
+    // Desktop
+    // { "type": "custom", "format": "\u001b[1;35m 󰇄  Desktop\u001b[0m", },
+    { "type": "de", "key": " 󰧨  DE     ", "keyColor": "magenta" },
+    { "type": "wm", "key": " 󱂬  WM     ", "keyColor": "magenta" },
+    // { "type": "wmtheme", "key": " 󰉼  Theme  ", "keyColor": "magenta", },
+    // { "type": "icons", "key": " 󰀻  Icons  ", "keyColor": "magenta", },
+    // { "type": "cursor", "key": " 󰊠  Cursor ", "keyColor": "magenta", },
+    // { "type": "font", "key": " 󰛖  Font   ", "keyColor": "magenta", },
+    // { "type": "terminal", "key": " 󰄛  Term   ", "keyColor": "magenta", },
+    // { "type": "terminalfont", "key": " 󰛖  TFont  ", "keyColor": "magenta", },
+    { "type": "custom", "key": " 󰮯  Fetch  ", "format": "\u001b[33m󰮯 \u001b[30m󰊠 \u001b[31m󰊠 \u001b[32m󰊠 \u001b[34m󰊠 \u001b[35m󰊠 \u001b[36m󰊠 \u001b[37m󰊠", "keyColor": "magenta" }
+
+
+    // Uptime / time
+    // { "type": "custom", "format": "\u001b[1;36m 󰅐  System Info\u001b[0m", },
+    // {
+    //   "type": "command",
+    //   "key": " 󰛡  OS Age ",
+    //   "keyColor": "cyan",
+    //   "text": "birth_install=$(stat -c %W / 2>/dev/null || echo 0); current=$(date +%s); diff=$(( (current - birth_install) / 86400 )); echo \"$diff days\"",
+    // },
+    // { "type": "uptime", "key": " 󱫐  Uptime ", "keyColor": "cyan", },
+    // { "type": "datetime", "key": " 󰃰  Time   ", "keyColor": "cyan", "format": "{year}-{month-pretty}-{day-pretty}  {hour-pretty}:{minute-pretty}:{second-pretty}", },
+    // { "type": "localip", "key": " 󰩟  IP     ", "keyColor": "cyan", "showIpv4": true, "showIpv6": false, },
+
+    // "break",
+
+    // Color palette
+    // { "type": "colors", "paddingLeft": 2, "symbol": "circle", "block": { "width": 3, "height": 1, }, },
+  ]
 }
