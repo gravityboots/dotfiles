@@ -5,14 +5,14 @@
 
 hyprctl dispatch movecursor 1920 1080
 
-hyprctl dispatch exec "kitty -e btop"
+hyprctl dispatch exec "kitty --hold -e btop"
 
 hyprctl dispatch exec "kitty --hold -e fastfetch"
 
-hyprctl dispatch exec "kitty -e cmatrix"
+hyprctl dispatch exec "kitty --hold -e cmatrix"
 sleep 0.2
 hyprctl dispatch resizewindowpixel 0 40, activewindow
 
-hyprctl dispatch exec "kitty"
+hyprctl dispatch exec "kitty --hold"
 sleep 0.2
 hyprctl dispatch resizewindowpixel 40 0, activewindow
