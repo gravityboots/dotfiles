@@ -25,7 +25,7 @@
         "showIconBackground": false,
         "sortByMostUsed": true,
         "terminalCommand": "kitty -e",
-        "viewMode": "list"
+        "viewMode": "grid"
     },
     "audio": {
         "mprisBlacklist": [
@@ -463,7 +463,7 @@
         "avatarImage": "/home/gravityboots/Pictures/Profile Pictures/2 (outline).png",
         "boxRadiusRatio": 1,
         "clockFormat": "HH:mm:ss ",
-        "clockStyle": "custom",
+        "clockStyle": "digital",
         "compactLockScreen": true,
         "dimmerOpacity": 0,
         "enableBlurBehind": true,
@@ -504,7 +504,7 @@
         "lockScreenMonitors": [
         ],
         "lockScreenTint": 0,
-        "passwordChars": false,
+        "passwordChars": true,
         "radiusRatio": 0.67,
         "reverseScroll": false,
         "scaleRatio": 0.9,
