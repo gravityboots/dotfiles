@@ -1,11 +1,22 @@
 import QtQuick
 import Quickshell
+import Quickshell.Io
 import Quickshell.Wayland
 import Quickshell.Hyprland
 
-// MRU workspace switcher driven by Alt+Tab. Held-modifier behavior: Tab to
-// advance, release Alt to commit. Anti-flash arm timer hides the UI for a
-// short window so quick taps dispatch silently.
+// Alt+Tab MRU workspace switcher, event-driven edition.
+//
+// Like Overview, entries here are workspace identities only — windows are
+// looked up live via HyprData.windowsFor(id). The list rebuilds when the
+// underlying workspace structure changes; window churn never touches it.
+//
+// MRU ordering is captured by listening to focusedWorkspaceChanged. The list
+// at any moment is "currently-populated workspaces, in MRU order". Empty
+// workspaces are filtered out at rebuild time — and we rebuild not just when
+// HyprData says workspaces appeared/disappeared, but also when a workspace's
+// ListModel becomes empty (last window closed) or non-empty (first window
+// opened). That keeps the alt-tab list semantically correct even when no
+// structural Hyprland event fires.
 Item {
     id: alttab
 
@@ -14,10 +25,12 @@ Item {
     property bool active: false
     property bool armed: false
 
-    property var entries: []        // [{id, name, special, windows[], monW, monH}]
+    // entries are pure identity — { id, name, special, monW, monH }
+    property var entries: []
     property int index: 0
     property int _initialDir: 1
     property var _fallbackTarget: null
+    property bool _opening: false
 
     function recordWorkspace(id, name) {
         if (id === undefined || id === null) return
@@ -39,17 +52,17 @@ Item {
     Component.onCompleted: {
         const ws = Hyprland.focusedWorkspace
         if (ws) alttab.recordWorkspace(ws.id, ws.name)
-        HyprData.refresh()
     }
 
     //=========================================================================
-    //  GLOBAL SHORTCUTS  (Hyprland triggers via `global, hyprtab:<name>`)
+    //  GLOBAL SHORTCUTS
     //=========================================================================
-    GlobalShortcut { appid: "hyprtab"; name: "mod";    onReleased: if (alttab.active || alttab.armed) alttab.accept() }
-    GlobalShortcut { appid: "hyprtab"; name: "next";   onPressed: alttab.cycle(1) }
-    GlobalShortcut { appid: "hyprtab"; name: "prev";   onPressed: alttab.cycle(-1) }
-    GlobalShortcut { appid: "hyprtab"; name: "accept"; onPressed: alttab.accept() }
-    GlobalShortcut { appid: "hyprtab"; name: "cancel"; onPressed: alttab.cancel() }
+    GlobalShortcut { appid: "hyprtab"; name: "mod";      onReleased: if (alttab.active || alttab.armed) alttab.accept() }
+    GlobalShortcut { appid: "hyprtab"; name: "next";     onPressed: alttab.cycle(1) }
+    GlobalShortcut { appid: "hyprtab"; name: "prev";     onPressed: alttab.cycle(-1) }
+    GlobalShortcut { appid: "hyprtab"; name: "accept";   onPressed: alttab.accept() }
+    GlobalShortcut { appid: "hyprtab"; name: "cancel";   onPressed: alttab.cancel() }
+    GlobalShortcut { appid: "hyprtab"; name: "closeAll"; onPressed: alttab.closeHighlighted() }
 
     Timer {
         id: armTimer
@@ -63,62 +76,76 @@ Item {
         }
     }
 
-    // Refresh listener: when HyprData updates, rebuild our filtered entry list.
-    Connections {
-        target: HyprData
-        function onUpdated() { alttab._rebuildEntries() }
-    }
-
+    //=========================================================================
+    //  ENTRY REBUILD
+    //=========================================================================
+    // The entries list contains only populated, non-special (by default)
+    // workspaces, in MRU order. We rebuild when:
+    //   (a) the alt-tab is opening
+    //   (b) HyprData reports workspaces structurally changed
     function _rebuildEntries() {
-        // entries from MRU history first, but ONLY for currently-populated workspaces
         let order = [], seen = {}
+
+        // MRU-ordered populated workspaces from history
         for (const h of alttab.wsHistory) {
             if (seen[h.id]) continue
             if (!Config.includeSpecialWorkspaces && HyprData.isSpecial(h.id, h.name)) continue
-            if (!HyprData.byWs[h.id]) continue   // empty workspaces don't enter cycle
+            const lm = HyprData.windowsFor(h.id)
+            if (!lm || lm.count === 0) continue
             seen[h.id] = true
             order.push({ id: h.id, name: h.name })
         }
-        // any other populated workspace not yet in history
-        for (const k in HyprData.byWs) {
+        // Any other populated workspace not in history
+        for (const k in HyprData.workspaces) {
             const idn = parseInt(k)
-            const meta = HyprData.wsMeta[idn]
+            const meta = HyprData.workspaces[idn]
             if (seen[idn]) continue
             if (!Config.includeSpecialWorkspaces && meta && meta.special) continue
+            const lm = HyprData.windowsFor(idn)
+            if (!lm || lm.count === 0) continue
             seen[idn] = true
             order.push({ id: idn, name: meta ? meta.name : String(idn) })
         }
 
         alttab.entries = order.map(o => {
-            const wins = HyprData.byWs[o.id] || []
-            const meta = HyprData.wsMeta[o.id] || {}
+            const meta = HyprData.workspaces[o.id] || {}
             const monId = (meta.monId !== undefined) ? meta.monId : HyprData.focusedMonitorId
             const mon = HyprData.monitorById[monId] || { w: 16, h: 9 }
             return {
-                id: o.id, name: o.name || String(o.id),
+                id: o.id,
+                name: o.name || String(o.id),
                 special: HyprData.isSpecial(o.id, o.name),
-                windows: wins, monW: mon.w || 16, monH: mon.h || 9
+                monW: mon.w || 16,
+                monH: mon.h || 9
             }
         })
 
-        // preselect: workspace AFTER current in the populated list
+        // preselect: workspace AFTER current in the list (for forward cycle)
         if (alttab._opening) {
             const n = alttab.entries.length
             const curId = Hyprland.focusedWorkspace ? Hyprland.focusedWorkspace.id : null
             let curIdx = -1
             for (let i = 0; i < n; i++)
                 if (alttab.entries[i].id === curId) { curIdx = i; break }
-            if (n === 0)                 alttab.index = 0
-            else if (alttab._initialDir > 0)
-                alttab.index = (curIdx >= 0) ? ((curIdx + 1) % n) : 0
-            else
-                alttab.index = (curIdx >= 0) ? ((curIdx - 1 + n) % n) : (n - 1)
+            if (n === 0)                       alttab.index = 0
+            else if (alttab._initialDir > 0)   alttab.index = (curIdx >= 0) ? ((curIdx + 1) % n) : 0
+            else                               alttab.index = (curIdx >= 0) ? ((curIdx - 1 + n) % n) : (n - 1)
             alttab._opening = false
         }
         if (alttab.index >= alttab.entries.length)
             alttab.index = Math.max(0, alttab.entries.length - 1)
     }
-    property bool _opening: false
+
+    // Rebuild on structural workspace changes. Also on geometry sync completion
+    // (first bootstrap, or any time we missed events) — this is cheap and the
+    // rebuild itself is a no-op if nothing semantically changed.
+    Connections {
+        target: HyprData
+        function onWorkspacesChanged() { alttab._rebuildEntries() }
+        function onUpdated() {
+            if (alttab.active || alttab.armed) alttab._rebuildEntries()
+        }
+    }
 
     function _quickFallbackTarget(dir) {
         const h = alttab.wsHistory
@@ -131,7 +158,7 @@ Item {
             alttab._opening = true
             alttab._initialDir = dir
             win.screen = root.focusedScreen() || win.screen
-            HyprData.refresh()
+            alttab._rebuildEntries()
             alttab._fallbackTarget = alttab._quickFallbackTarget(dir)
             if (Config.armDelayMs <= 0) {
                 alttab.active = true
@@ -175,8 +202,9 @@ Item {
         alttab._fallbackTarget = null
     }
 
-    // Map of grid index -> tile Item, populated by each delegate on completion
-    // and used by the floating SelectionIndicator to target the right tile.
+    //=========================================================================
+    //  SELECTION INDICATOR
+    //=========================================================================
     property var tilesByIndex: ({})
 
     function _refreshIndicator() {
@@ -194,6 +222,33 @@ Item {
     onEntriesChanged: Qt.callLater(alttab._refreshIndicator)
 
     //=========================================================================
+    //  DELETE-KEY: close every window on highlighted workspace
+    //=========================================================================
+    // Just dispatches the close batch. The closewindow events update HyprData,
+    // which removes the rows from the workspace's ListModel; the tile reflects
+    // it live. Once empty, the workspace stays in entries until next open
+    // (when the filter drops it). User keeps cycling fine.
+    function closeHighlighted() {
+        if (!alttab.active && !alttab.armed) return
+        if (alttab.entries.length === 0) return
+        const e = alttab.entries[alttab.index]
+        if (!e) return
+        const lm = HyprData.windowsFor(e.id)
+        if (!lm || lm.count === 0) return
+
+        let cmds = []
+        for (let i = 0; i < lm.count; i++) {
+            const w = lm.get(i)
+            if (w.address) cmds.push("dispatch closewindow address:" + w.address)
+        }
+        if (cmds.length === 0) return
+        batchProc.command = ["hyprctl", "--batch", cmds.join(";")]
+        batchProc.running = true
+    }
+
+    Process { id: batchProc }
+
+    //=========================================================================
     //  UI
     //=========================================================================
     PanelWindow {
@@ -209,7 +264,7 @@ Item {
         Rectangle {
             anchors.fill: parent
             color: Config.backdropColor
-            opacity: Config.backdropOpacity
+            opacity: Config.altTabBackdropOpacity
             MouseArea { anchors.fill: parent; onClicked: alttab.cancel() }
         }
 
@@ -217,10 +272,7 @@ Item {
             id: panel
             anchors.centerIn: parent
             radius: Config.panelRadius
-            color: Qt.rgba(Config.backgroundColor.r,
-                           Config.backgroundColor.g,
-                           Config.backgroundColor.b,
-                           Config.backgroundOpacity)
+            color: Config.altTabPanelBg
             border.width: Config.borderWidth
             border.color: Config.panelBorder
             implicitWidth:  Math.max(grid.implicitWidth  + Config.panelPadding * 2,
@@ -242,11 +294,15 @@ Item {
                         wsId: modelData.id
                         wsName: modelData.name
                         special: modelData.special
-                        windows: modelData.windows
+                        windowsModel: HyprData.windowsFor(modelData.id)
                         monW: modelData.monW
                         monH: modelData.monH
+                        windowHoverHighlight: false
+                        // Only stream while the alt-tab is visible — armed
+                        // state (before the arm timer expires) doesn't render
+                        // tiles, so previews wouldn't be visible anyway.
+                        previewsActive: alttab.active
                         Component.onCompleted: {
-                            // register self so the floating indicator can locate us
                             let m = alttab.tilesByIndex
                             m[index] = this
                             alttab.tilesByIndex = m
@@ -261,20 +317,15 @@ Item {
                 }
             }
 
-            // The floating selection ring is a SIBLING of the grid, not a child.
-            // Putting it inside the Grid would make the Grid layout reserve a
-            // cell for it past the last tile, producing phantom rows and bogus
-            // animation endpoints. Anchoring to the grid's bounds keeps the
-            // indicator in the grid's coordinate space so it can read raw
-            // target.x / target.y directly.
+            // floating selection ring as a sibling of the grid
             Item {
-                id: indicatorOverlay
                 anchors.fill: grid
                 z: 5
                 SelectionIndicator {
                     id: indicator
-                    moveDuration: 180   // snappier for alt-tab
+                    moveDuration: 180
                     fadeDuration: 120
+                    showInnerTint: true
                 }
             }
 

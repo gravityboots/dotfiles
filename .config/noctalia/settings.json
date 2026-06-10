@@ -609,10 +609,10 @@
         "sounds": {
             "criticalSoundFile": "",
             "enabled": true,
-            "excludedApps": "discord,firefox,chrome,chromium,edge,vesktop,zen",
+            "excludedApps": "discord,firefox,chrome,chromium,edge,vesktop,zen,blueman,blueman-applet,blueman-tray,obexd,bluetoothd,wireplumber,pipewire,pipewire-pulse",
             "lowSoundFile": "",
             "normalSoundFile": "",
-            "separateSounds": false,
+            "separateSounds": true,
             "volume": 0.5
         }
     },

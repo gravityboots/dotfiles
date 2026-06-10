@@ -28,6 +28,11 @@ Item {
 
     property int moveDuration: 220
     property int fadeDuration: 140
+    // Optional faint inner wash inside the ring. Useful in alt-tab where the
+    // workspace tile itself is the meaningful selection unit. Overview leaves
+    // this off (ring only) because the user is interacting with windows inside
+    // the tile and a wash would compete with per-window hover state.
+    property bool showInnerTint: false
 
     visible: shown && target !== null
     opacity: (shown && target !== null && targetWidth > 0) ? 1 : 0
@@ -43,7 +48,7 @@ Item {
     Behavior on width  { NumberAnimation { duration: ind.moveDuration; easing.type: Easing.OutCubic } }
     Behavior on height { NumberAnimation { duration: ind.moveDuration; easing.type: Easing.OutCubic } }
 
-    // ring
+    // outline ring
     Rectangle {
         anchors.fill: parent
         radius: Config.tileRadius
@@ -53,13 +58,15 @@ Item {
         Behavior on border.color { ColorAnimation { duration: ind.fadeDuration } }
     }
 
-    // faint inner tint
+    // optional inner tint wash (enabled in alt-tab)
     Rectangle {
         anchors.fill: parent
         anchors.margins: Config.previewInset
         radius: Config.tileRadius - 2
+        visible: ind.showInnerTint
         color: ind.special ? Config.specialAccent : Config.selectedBackground
-        opacity: Config.selectedTint
+        opacity: ind.showInnerTint ? Config.selectedTint : 0
+        Behavior on opacity { NumberAnimation { duration: ind.fadeDuration } }
     }
 
     // Whenever the target item moves or resizes (e.g. workspace list rebuilt,

@@ -26,9 +26,31 @@ QtObject {
     //=========================================================================
     //  OPACITIES
     //=========================================================================
-    property real backgroundOpacity:   0.85
-    property real backdropOpacity:     0.15
+    property real backgroundOpacity:   0.85   // legacy default (unused; kept for back-compat)
+    // Per-view panel background opacity.
+    property real altTabBackgroundOpacity:   0.85
+    property real overviewBackgroundOpacity: 0.85
+    property real backdropOpacity:     0.15   // legacy default (unused; kept for back-compat)
+    // Per-view backdrop (full-screen dim layer) opacity.
+    property real altTabBackdropOpacity:   0.15
+    property real overviewBackdropOpacity: 0.15
     property real selectedTint:        0.15
+
+    // Pre-computed panel backgrounds (color + opacity baked in). Bind to these
+    // instead of recomputing Qt.rgba() in every consumer — saves a function
+    // call per re-evaluation. These re-evaluate only when their dependencies
+    // change, which is essentially never at runtime.
+    readonly property color altTabPanelBg:
+        Qt.rgba(backgroundColor.r, backgroundColor.g, backgroundColor.b,
+                altTabBackgroundOpacity)
+    readonly property color overviewPanelBg:
+        Qt.rgba(backgroundColor.r, backgroundColor.g, backgroundColor.b,
+                overviewBackgroundOpacity)
+    readonly property color tileBadgeBg:
+        Qt.rgba(backgroundColor.r, backgroundColor.g, backgroundColor.b, 0.78)
+    readonly property color tooltipBg:
+        Qt.rgba(backgroundColor.r, backgroundColor.g, backgroundColor.b,
+                tooltipBgOpacity)
 
     //=========================================================================
     //  GEOMETRY  (shared)
@@ -59,17 +81,36 @@ QtObject {
     property int  specialColumns:      5      // special workspace tiles per row
     property real overviewPreviewWidth: 250   // can match previewWidth; separate so you can tune
     property real dividerHeight:       1
-    property real dividerSideFade:     72     // pixels of fade on each end of divider
+    property real dividerSideFade:     90     // pixels of fade on each end of divider
     property real specialStripGap:     10     // gap above & below the divider
 
     //=========================================================================
     //  PREVIEWS
     //=========================================================================
-    property bool livePreviews:        true
-    property bool liveCapture:         true
-    property bool showWindowIcons:     false
+    property bool livePreviews:        true   // live wayland screencopy of each window
+    property bool showWindowIcons:     true
     property real windowIconMax:       30
-    property real windowIconOpacity:   1.0
+    property real windowIconOpacity:   0.85
+
+    //=========================================================================
+    //  HOVER TOOLTIP  (window title popup on hover)
+    //=========================================================================
+    // Whether to show a tooltip with the window title when hovering a window.
+    property bool   tooltipEnabled:        true
+    // Delay before the tooltip appears, in ms. 0 = instant.
+    property int    tooltipDelayMs:        10
+    // Tooltip max width as a multiple of the tile width. Text wraps past this.
+    property real   tooltipMaxWidthFactor: 1.5
+    // Tooltip padding inside the box (px).
+    property real   tooltipPadding:        8
+    // Tooltip background opacity (the body is Config.backgroundColor at this
+    // alpha). The border is panelBorder.
+    property real   tooltipBgOpacity:      0.95
+    // Vertical gap between the hovered window and the tooltip (px).
+    property real   tooltipGap:            4
+    // Where to position the tooltip relative to the hovered window.
+    // "above" or "below". May overflow the panel — that's allowed.
+    property string tooltipPosition:       "above"
 
     //=========================================================================
     //  TYPOGRAPHY

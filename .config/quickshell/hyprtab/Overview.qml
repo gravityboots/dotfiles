@@ -4,23 +4,39 @@ import Quickshell.Io
 import Quickshell.Wayland
 import Quickshell.Hyprland
 
-// Super+Tab workspace overview. Sequential 1..N grid, then a fading divider,
-// then a strip of currently-open special workspaces plus a "+" tile to spawn
-// a new one. Click a workspace tile to switch; click a window to focus it;
-// middle-click a window to close it.
+// Super+Tab workspace overview, event-driven edition.
+//
+// Architecture:
+//   The model lives in HyprData. Hyprland's socket2 stream drives all window
+//   mutations directly into per-workspace ListModels. This UI is purely a
+//   reactive view: it never mutates state, never reconciles, never polls. A
+//   drag dispatches movetoworkspacesilent and clears local drag UI; the
+//   movewindow event coming back from Hyprland updates the model. Same for
+//   close: middle-click dispatches closewindow and the closewindow event
+//   removes the row. All transitions are smooth because per-ws ListModels
+//   are address-stable — moving a window destroys exactly one delegate in
+//   the source tile and creates exactly one in the destination.
+//
+// What this file owns:
+//   - cursor position (selectedRow/Col) and indicator placement
+//   - keyboard navigation (each move dispatches workspace switch live)
+//   - workspace entry lists (normalEntries / specialEntries) — REBUILT only
+//     when HyprData.workspacesChanged() fires, i.e. when a workspace appears
+//     or disappears. Window changes never touch these arrays.
+//   - drag UI: the floating ghost, drop-target hit-test, dispatch on release.
+//     No model mutation here; the event socket drives the model.
 Item {
     id: overview
 
     property bool active: false
 
-    // --- CURSOR STATE ---
-    // In the overview, navigating the cursor IS navigating workspaces — each
-    // move also dispatches the switch live, so the cursor's position is always
-    // the current workspace. One indicator, no dual highlight.
-    property int selectedRow: 0   // 0 = normal grid, 1 = special strip
-    property int selectedCol: 0   // flat index in the current row
+    // cursor — row 0 = normal grid, row 1 = special strip
+    property int selectedRow: 0
+    property int selectedCol: 0
 
-    // --- model lists ---
+    // workspace-level entry lists (id/name/monitor) — DO NOT contain windows.
+    // Each tile binds its inner Repeater to HyprData.windowsFor(modelData.id)
+    // directly, so window churn never touches these arrays.
     property var normalEntries: []
     property var specialEntries: []
 
@@ -29,41 +45,75 @@ Item {
     property var specialTiles: ({})
     property Item plusTileItem: null
 
-    function _rebuild() {
-        // ----- normal workspaces: sequential 1..(rows*cols), populated or not -----
+    // --- DRAG STATE ---
+    // The drag is purely visual. We never pluck the window out of any model.
+    // On release we dispatch movetoworkspacesilent; the event-driven model
+    // observes Hyprland's movewindow event and removes-from-source + appends-
+    // to-destination via direct ListModel ops. That's what makes the move
+    // smooth and flash-free: one delegate down, one delegate up, no churn
+    // elsewhere.
+    property bool dragActive: false
+    property string dragAddress: ""
+    property string dragIcon: ""
+    property string dragTitle: ""
+    property var    dragWl: null
+    property real   dragW: 220
+    property real   dragH: 44
+    property real   dragGrabDX: 0
+    property real   dragGrabDY: 0
+    property real   dragX: 0
+    property real   dragY: 0
+    property string dropTargetKey: ""
+    property int    _dragSrcWs: -1
+
+    // --- TOOLTIP STATE ---
+    // The tooltip floats above all tiles, showing the hovered window's title.
+    // _ttPendingTitle is set on hover-enter; _ttTimer fires after the
+    // configured delay and promotes it to _ttTitle (which makes the tooltip
+    // visible). Hover-exit clears both immediately. Drag start clears too.
+    property string _ttTitle: ""              // currently shown title ("" = hidden)
+    property string _ttPendingTitle: ""       // waiting to become _ttTitle
+    property real   _ttAnchorX: 0             // window top-left in global coords
+    property real   _ttAnchorY: 0
+    property real   _ttAnchorW: 0             // hovered window box width
+    property real   _ttAnchorH: 0             //   and height
+
+    //=========================================================================
+    //  WORKSPACE-LEVEL REBUILD
+    //=========================================================================
+    // Called when HyprData reports a workspace appeared/disappeared (or on
+    // startup). The window lists are NOT in normalEntries — each tile binds
+    // its windowsModel to HyprData.windowsFor(id) directly. We only need to
+    // refresh this when the set of workspaces themselves changes.
+    function _rebuildWorkspaces() {
+        // Normal: sequential 1..(rows*cols), populated or not.
         const totalNormal = Config.overviewRows * Config.overviewColumns
         let normals = []
         for (let wid = 1; wid <= totalNormal; wid++) {
-            const wins = HyprData.byWs[wid] || []
-            const meta = HyprData.wsMeta[wid] || {}
+            const meta = HyprData.workspaces[wid] || {}
             const monId = (meta.monId !== undefined) ? meta.monId : HyprData.focusedMonitorId
             const mon = HyprData.monitorById[monId] || { w: 16, h: 9 }
             normals.push({
                 id: wid,
                 name: String(wid),
-                special: false,
-                windows: wins,
                 monW: mon.w || 16,
                 monH: mon.h || 9
             })
         }
         overview.normalEntries = normals
 
-        // ----- special workspaces: those currently open + ★create tile at end -----
+        // Special: every currently-open special workspace.
         let specials = []
-        for (const k in HyprData.wsMeta) {
+        for (const k in HyprData.workspaces) {
             const idn = parseInt(k)
-            const meta = HyprData.wsMeta[idn]
+            const meta = HyprData.workspaces[idn]
             if (!meta.special) continue
-            const wins = HyprData.byWs[idn] || []
             const monId = (meta.monId !== undefined) ? meta.monId : HyprData.focusedMonitorId
             const mon = HyprData.monitorById[monId] || { w: 16, h: 9 }
             specials.push({
                 id: idn,
                 name: HyprData.specialName(meta.name) || meta.name,
                 fullName: meta.name,
-                special: true,
-                windows: wins,
                 monW: mon.w || 16,
                 monH: mon.h || 9
             })
@@ -72,24 +122,27 @@ Item {
         overview.specialEntries = specials
     }
 
+    // Rebuild only on STRUCTURAL workspace change (add/remove/rename). Also
+    // on geometry-sync completion (first bootstrap, post-event re-sync) so we
+    // don't miss the initial state. The rebuild is cheap and idempotent.
     Connections {
         target: HyprData
-        function onUpdated() { overview._rebuild(); Qt.callLater(overview._refreshIndicators) }
+        function onWorkspacesChanged() {
+            overview._rebuildWorkspaces()
+            Qt.callLater(overview._refreshIndicators)
+        }
+        function onUpdated() {
+            if (overview.active) {
+                overview._rebuildWorkspaces()
+                Qt.callLater(overview._refreshIndicators)
+            }
+        }
     }
 
-    // Note: we deliberately do NOT resync the cursor on `focusedWorkspaceChanged`
-    // while the overview is open. Each of our own navigation keypresses triggers
-    // a focused-workspace change, and an async resync would race with our local
-    // model — producing exactly the "cursor stuck in middle row" feedback loop.
-    // HyprData.dispatchSwitch updates monitorSpecial optimistically so internal
-    // navigation stays consistent without needing a roundtrip refresh.
-    //
-    // External workspace changes are not expected while the overview holds
-    // keyboard focus exclusively; if you do trigger one (via a script), reopen
-    // the overview to re-snap.
+    Component.onCompleted: overview._rebuildWorkspaces()
 
     //=========================================================================
-    //  IPC  (callable as `qs ipc -c hyprtab call overview <function>`)
+    //  IPC + SHORTCUTS
     //=========================================================================
     IpcHandler {
         target: "overview"
@@ -98,36 +151,48 @@ Item {
         function close()  { overview.close() }
     }
 
-    // Super+Tab global shortcut to toggle (in addition to IPC).
-    GlobalShortcut { appid: "hyprtab"; name: "overviewToggle"; onPressed: overview.active ? overview.close() : overview.open() }
+    GlobalShortcut { appid: "hyprtab"; name: "overviewToggle"
+                     onPressed: overview.active ? overview.close() : overview.open() }
 
     function open() {
         win.screen = root.focusedScreen() || win.screen
-        HyprData.refresh()
-        // Seed the cursor at the current workspace so the indicator opens
-        // exactly where the user already is. Each subsequent move dispatches
-        // a workspace switch live, so the cursor *is* the current workspace.
+        // safety: clear any stale drag state
+        overview.dragActive = false
+        overview.dragAddress = ""
+        overview.dropTargetKey = ""
+        overview._internallySwitching = false  // start fresh
+        // Force Hyprland to refresh its workspace view in case we missed
+        // events while the overview was hidden — needed so focusedWorkspace
+        // reflects reality (e.g. user pressed SUPER+1 outside the overview).
+        try { if (Hyprland.refreshWorkspaces) Hyprland.refreshWorkspaces() } catch (e) {}
+        try { if (Hyprland.refreshMonitors)   Hyprland.refreshMonitors()   } catch (e) {}
+        overview._rebuildWorkspaces()
         overview._snapCursorToCurrent()
         overview.active = true
         Qt.callLater(overview._refreshIndicators)
+        // Re-snap on the next tick: refreshWorkspaces is async-ish and
+        // focusedWorkspace may settle to its true value a frame later.
+        Qt.callLater(function() {
+            overview._snapCursorToCurrent()
+            overview._refreshIndicators()
+        })
+        // also kick a sync so geometry data is fresh
+        HyprData.refresh()
     }
 
     function close() {
         overview.active = false
+        overview.dragActive = false
+        overview.dragAddress = ""
+        overview.dropTargetKey = ""
+        overview._hideTooltip()
         normalIndicator.hide()
         specialIndicator.hide()
     }
 
-    // Pick a cursor position that matches the focused workspace. Used only on
-    // open() — during active navigation, the cursor is authoritative and
-    // shouldn't be moved out from under the user.
-    //
-    // Special detection has two sources, in priority order, because both can be
-    // stale right at startup:
-    //   1. Hyprland.focusedWorkspace.name — if it starts with "special:" the
-    //      user is on that special right now.
-    //   2. HyprData.monitorSpecial[fmId] — what the last hyprctl monitors poll
-    //      said was overlaid on the focused monitor.
+    //=========================================================================
+    //  CURSOR + NAVIGATION
+    //=========================================================================
     function _snapCursorToCurrent() {
         const rows = Config.overviewRows
         const cols = Config.overviewColumns
@@ -139,8 +204,6 @@ Item {
         const specName = specFromFocus.length > 0 ? specFromFocus : specFromMon
 
         if (specName.length > 0) {
-            // place cursor in the special strip on that tile (or first special
-            // if it's not yet present in our entries list)
             let si = -1
             for (let i = 0; i < overview.specialEntries.length; i++) {
                 if (overview.specialEntries[i].name === specName) { si = i; break }
@@ -149,44 +212,26 @@ Item {
             overview.selectedCol = (si >= 0) ? si : 0
             return
         }
-        // normal workspace: focusedWorkspace.id is the 1-based workspace number
         const curId = fw ? fw.id : 1
         const idx0 = curId - 1
         overview.selectedRow = 0
         overview.selectedCol = (idx0 >= 0 && idx0 < rows * cols) ? idx0 : 0
     }
 
-    //=========================================================================
-    //  KEYBOARD NAV  (each move dispatches the workspace switch live)
-    //=========================================================================
     function _move(dx, dy) {
         const rows = Config.overviewRows
         const cols = Config.overviewColumns
-        const specEntries = overview.specialEntries
-        const specCount = specEntries.length + 1   // +1 for the "+" tile
-        // wrap helper
+        const specCount = overview.specialEntries.length + 1   // +1 for the "+" tile
         const wrap = (v, m) => ((v % m) + m) % m
 
         if (overview.selectedRow === 0) {
-            // normal grid: cursor as flat index = row*cols + col
             const idx = overview.selectedCol
             let nrow = Math.floor(idx / cols)
             let ncol = idx % cols
-
-            if (dx !== 0) {
-                ncol = wrap(ncol + dx, cols)
-            }
+            if (dx !== 0) ncol = wrap(ncol + dx, cols)
             if (dy !== 0) {
                 nrow = nrow + dy
-                if (nrow >= rows) {
-                    // step DOWN out of normal grid -> special strip
-                    overview.selectedRow = 1
-                    overview.selectedCol = Math.min(ncol, specCount - 1)
-                    overview._dispatchSelected()
-                    return
-                }
-                if (nrow < 0) {
-                    // step UP from top of normal grid -> wrap to special strip
+                if (nrow >= rows || nrow < 0) {
                     overview.selectedRow = 1
                     overview.selectedCol = Math.min(ncol, specCount - 1)
                     overview._dispatchSelected()
@@ -195,13 +240,9 @@ Item {
             }
             overview.selectedCol = nrow * cols + ncol
         } else {
-            // special strip: 1D wrap horizontally
             let idx = overview.selectedCol
             if (dx !== 0) idx = wrap(idx + dx, specCount)
             if (dy !== 0) {
-                // any vertical movement from the strip jumps back into normal
-                // grid; going up enters last row at same column, going down
-                // wraps to top row at same column
                 const ncol = Math.min(idx, cols - 1)
                 overview.selectedRow = 0
                 overview.selectedCol = (dy < 0)
@@ -215,24 +256,49 @@ Item {
         overview._dispatchSelected()
     }
 
-    // Dispatch the workspace switch for the current cursor position.
-    // No-op for the "+" tile (creation is on Enter or click only).
+    // True while the user's own navigation key triggered a dispatch we're
+    // waiting to see come back as focusedWorkspaceChanged. Used to distinguish
+    // "I caused this switch" from "something external switched the workspace"
+    // (e.g. user pressed SUPER+1 while the overview is open). Cleared on the
+    // very next focusedWorkspaceChanged that matches our cursor.
+    property bool _internallySwitching: false
+
     function _dispatchSelected() {
         if (overview.selectedRow === 0) {
             const e = overview.normalEntries[overview.selectedCol]
-            if (e) HyprData.dispatchSwitch(e.id, e.name)
+            if (e) {
+                overview._internallySwitching = true
+                HyprData.dispatchSwitch(e.id, e.name)
+            }
         } else {
             const idx = overview.selectedCol
-            if (idx === overview.specialEntries.length) return   // "+" tile: no live switch
+            if (idx === overview.specialEntries.length) return   // "+" tile
             const e = overview.specialEntries[idx]
-            if (e) HyprData.dispatchSwitch(e.id, e.fullName)
+            if (e) {
+                overview._internallySwitching = true
+                HyprData.dispatchSwitch(e.id, e.fullName)
+            }
+        }
+    }
+
+    // External workspace switch (e.g. user pressed SUPER+1 with overview open):
+    // snap our cursor to match. The internal flag is to ignore the echo of our
+    // own dispatches.
+    Connections {
+        target: Hyprland
+        function onFocusedWorkspaceChanged() {
+            if (!overview.active) return
+            if (overview._internallySwitching) {
+                // This change is the echo of our own dispatch — consume the
+                // flag and don't snap (cursor is already correct).
+                overview._internallySwitching = false
+                return
+            }
+            overview._snapCursorToCurrent()
         }
     }
 
     function _activateSelection() {
-        // For workspace tiles the cursor is already on that workspace, so
-        // Enter just closes the overview. For the "+" tile, create a new
-        // special workspace.
         if (overview.selectedRow === 1
             && overview.selectedCol === overview.specialEntries.length) {
             HyprData.createNewSpecial()
@@ -240,7 +306,6 @@ Item {
         overview.close()
     }
 
-    // Drive the two floating indicators based on cursor state.
     function _refreshIndicators() {
         if (!overview.active) {
             normalIndicator.hide()
@@ -255,9 +320,8 @@ Item {
         } else {
             normalIndicator.hide()
             const idx = overview.selectedCol
-            const t = (idx === overview.specialEntries.length)
-                      ? overview.plusTileItem
-                      : overview.specialTiles[idx]
+            const onPlus = (idx === overview.specialEntries.length)
+            const t = onPlus ? overview.plusTileItem : overview.specialTiles[idx]
             if (t) specialIndicator.moveTo(t, true)
             else   specialIndicator.hide()
         }
@@ -266,6 +330,159 @@ Item {
     onSelectedRowChanged: overview._refreshIndicators()
     onSelectedColChanged: overview._refreshIndicators()
     onActiveChanged:      overview._refreshIndicators()
+
+    //=========================================================================
+    //  WINDOW ACTIONS  (dispatch-only — no model mutation)
+    //=========================================================================
+    // Close a window: just dispatch. The closewindow event in HyprData will
+    // splice the row out of the workspace's ListModel and the matching
+    // delegate will be destroyed. No timer, no reconcile, no race.
+    function _closeWindow(wsId, addr) {
+        Hyprland.dispatch("closewindow address:" + addr)
+    }
+
+    //=========================================================================
+    //  DRAG  (visual only — Hyprland events drive the model)
+    //=========================================================================
+    function _onWindowDragStarted(srcWsId, payload) {
+        overview.dragAddress = payload.address
+        overview.dragIcon = payload.icon
+        overview.dragTitle = payload.title
+        overview.dragWl = payload.wl
+        overview.dragW = payload.w
+        overview.dragH = payload.h
+        overview.dragGrabDX = payload.grabDX
+        overview.dragGrabDY = payload.grabDY
+        overview.dropTargetKey = ""
+        overview._dragSrcWs = srcWsId
+        overview.dragActive = true
+        overview._hideTooltip()
+    }
+    function _onWindowDragMoved(gx, gy) {
+        if (!overview.dragActive) return
+        const p = panel.mapFromGlobal(gx, gy)
+        overview.dragX = p.x - overview.dragGrabDX
+        overview.dragY = p.y - overview.dragGrabDY
+        overview.dropTargetKey = overview._hitTestTile(gx, gy)
+    }
+    function _onWindowDragEnded(gx, gy) {
+        if (!overview.dragActive) return
+        const key = overview._hitTestTile(gx, gy)
+        const addr = overview.dragAddress
+        overview.dragActive = false
+        overview.dropTargetKey = ""
+        if (!key) {
+            // dropped outside any tile — clearing dragAddress un-hides source
+            overview.dragAddress = ""
+            return
+        }
+        // dispatch the move; the movewindow event will update the model.
+        // clear dragAddress so the source frame stays hidden ONLY while the
+        // event-driven move arrives (typically <16ms). If the dispatch fails
+        // outright, the frame returns immediately — which is correct.
+        overview.dragAddress = ""
+        overview._performDrop(key, addr)
+    }
+
+    function _hitTestTile(gx, gy) {
+        function hit(item) {
+            if (!item) return false
+            const p = item.mapFromGlobal(gx, gy)
+            return p.x >= 0 && p.y >= 0 && p.x < item.width && p.y < item.height
+        }
+        for (const k in overview.normalTiles)
+            if (hit(overview.normalTiles[k])) return "n:" + k
+        for (const k in overview.specialTiles)
+            if (hit(overview.specialTiles[k])) return "s:" + k
+        if (hit(overview.plusTileItem)) return "plus"
+        return ""
+    }
+
+    function _performDrop(key, addr) {
+        if (key === "plus") {
+            // Find a fresh special name, dispatch the move. Hyprland's
+            // createworkspace event will append the new ws to HyprData
+            // (which fires workspacesChanged → _rebuildWorkspaces), and
+            // movewindow will add the row to its ListModel.
+            const taken = {}
+            for (const e of overview.specialEntries) taken[e.name] = true
+            let base = Config.newSpecialPrefix
+            let candidate = base
+            let i = 2
+            while (taken[candidate]) candidate = base + "-" + (i++)
+            Hyprland.dispatch("movetoworkspacesilent special:" + candidate + ",address:" + addr)
+            return
+        }
+        const parts = key.split(":")
+        if (parts[0] === "n") {
+            const idx = parseInt(parts[1])
+            const e = overview.normalEntries[idx]
+            if (!e) return
+            Hyprland.dispatch("movetoworkspacesilent " + e.id + ",address:" + addr)
+        } else if (parts[0] === "s") {
+            const idx = parseInt(parts[1])
+            const e = overview.specialEntries[idx]
+            if (!e) return
+            Hyprland.dispatch("movetoworkspacesilent " + e.fullName + ",address:" + addr)
+        }
+    }
+
+    //=========================================================================
+    //  HOVER TOOLTIP
+    //=========================================================================
+    // The tooltip is a single floating Item inside the panel. Hover events
+    // from any WorkspaceTile drive its title + anchor position. A delay timer
+    // suppresses flash-on-pass: the tooltip only appears if the cursor stays
+    // on the same window for `tooltipDelayMs` ms.
+    //
+    // Once shown, subsequent hover-enters on OTHER windows refresh the title
+    // immediately (no second delay) — once the user is in tooltip-browsing
+    // mode, the tooltip moves with them.
+    function _onWindowHoverEntered(title, gx, gy, w, h) {
+        if (!Config.tooltipEnabled) return
+        if (overview.dragActive) return
+        overview._ttAnchorX = gx
+        overview._ttAnchorY = gy
+        overview._ttAnchorW = w
+        overview._ttAnchorH = h
+        if (overview._ttTitle.length > 0) {
+            // already in tooltip-browsing mode — refresh immediately
+            overview._ttTitle = title
+            _ttTimer.stop()
+        } else {
+            // not yet showing — arm the delay
+            overview._ttPendingTitle = title
+            _ttTimer.restart()
+        }
+    }
+    function _onWindowHoverExited(title) {
+        // Only hide if the exit is for the title currently pending/showing.
+        // (Avoids a rapid enter-A → enter-B → exit-A sequence killing the
+        // tooltip we just refreshed to B's title.)
+        if (overview._ttPendingTitle === title) {
+            overview._ttPendingTitle = ""
+            _ttTimer.stop()
+        }
+        if (overview._ttTitle === title) {
+            overview._ttTitle = ""
+        }
+    }
+    function _hideTooltip() {
+        overview._ttTitle = ""
+        overview._ttPendingTitle = ""
+        _ttTimer.stop()
+    }
+
+    Timer {
+        id: _ttTimer
+        interval: Math.max(0, Config.tooltipDelayMs)
+        repeat: false
+        onTriggered: {
+            if (overview._ttPendingTitle.length > 0) {
+                overview._ttTitle = overview._ttPendingTitle
+            }
+        }
+    }
 
     //=========================================================================
     //  UI
@@ -284,11 +501,10 @@ Item {
         Rectangle {
             anchors.fill: parent
             color: Config.backdropColor
-            opacity: Config.backdropOpacity
+            opacity: Config.overviewBackdropOpacity
             MouseArea { anchors.fill: parent; onClicked: overview.close() }
         }
 
-        // capture keys at the panel-window level
         Item {
             anchors.fill: parent
             focus: overview.active
@@ -299,7 +515,6 @@ Item {
             Keys.onUpPressed:     overview._move( 0, -1)
             Keys.onDownPressed:   overview._move( 0,  1)
             Keys.onPressed: function(event) {
-                // vim-style hjkl
                 if      (event.key === Qt.Key_H) { overview._move(-1, 0); event.accepted = true }
                 else if (event.key === Qt.Key_L) { overview._move( 1, 0); event.accepted = true }
                 else if (event.key === Qt.Key_K) { overview._move( 0,-1); event.accepted = true }
@@ -307,7 +522,6 @@ Item {
                 else if (event.key === Qt.Key_Plus || event.key === Qt.Key_Equal) {
                     HyprData.createNewSpecial(); overview.close(); event.accepted = true
                 }
-                // number row 1-9 jumps the cursor (and dispatches) without closing
                 else if (event.key >= Qt.Key_1 && event.key <= Qt.Key_9) {
                     const n = event.key - Qt.Key_0
                     if (n - 1 < overview.normalEntries.length) {
@@ -331,10 +545,7 @@ Item {
             id: panel
             anchors.centerIn: parent
             radius: Config.panelRadius
-            color: Qt.rgba(Config.backgroundColor.r,
-                           Config.backgroundColor.g,
-                           Config.backgroundColor.b,
-                           Config.backgroundOpacity)
+            color: Config.overviewPanelBg
             border.width: Config.borderWidth
             border.color: Config.panelBorder
             implicitWidth:  contentCol.implicitWidth  + Config.panelPadding * 2
@@ -346,9 +557,6 @@ Item {
                 spacing: Config.specialStripGap
 
                 // ----- normal workspace grid -----
-                // Wrapped in an Item so the SelectionIndicator overlay can be
-                // a sibling of the Grid (not a child — that would make Grid lay
-                // the indicator out as a phantom cell past the last tile).
                 Item {
                     id: normalGridWrap
                     implicitWidth:  normalGrid.implicitWidth
@@ -368,9 +576,22 @@ Item {
                                 wsId: modelData.id
                                 wsName: modelData.name
                                 special: false
-                                windows: modelData.windows
+                                // Bind windows directly from the singleton's
+                                // event-driven ListModel for this workspace.
+                                // The reference is stable across the lifetime
+                                // of the tile, so the inner Repeater is also
+                                // stable; only append/remove/set on the
+                                // ListModel itself drives delegate creation.
+                                windowsModel: HyprData.windowsFor(modelData.id)
                                 monW: modelData.monW
                                 monH: modelData.monH
+                                // Only stream wayland captures while the
+                                // overview is visible — saves the bulk of
+                                // memory & GPU when closed.
+                                previewsActive: overview.active
+                                dropHighlight: overview.dragActive
+                                               && overview.dropTargetKey === ("n:" + index)
+                                draggingAddress: overview.dragActive ? overview.dragAddress : ""
                                 Component.onCompleted: {
                                     let m = overview.normalTiles
                                     m[index] = this
@@ -395,14 +616,27 @@ Item {
                                     overview.close()
                                 }
                                 onWindowMiddleClicked: function(addr) {
-                                    Hyprland.dispatch("closewindow address:" + addr)
-                                    HyprData.refresh()
+                                    overview._closeWindow(modelData.id, addr)
+                                }
+                                onWindowDragStarted: function(payload) {
+                                    overview._onWindowDragStarted(modelData.id, payload)
+                                }
+                                onWindowDragMoved: function(gx, gy) {
+                                    overview._onWindowDragMoved(gx, gy)
+                                }
+                                onWindowDragEnded: function(gx, gy) {
+                                    overview._onWindowDragEnded(gx, gy)
+                                }
+                                onWindowHoverEntered: function(title, gx, gy, w, h) {
+                                    overview._onWindowHoverEntered(title, gx, gy, w, h)
+                                }
+                                onWindowHoverExited: function(title) {
+                                    overview._onWindowHoverExited(title)
                                 }
                             }
                         }
                     }
 
-                    // overlay anchored to the grid bounds, sharing its coord space
                     Item {
                         anchors.fill: normalGrid
                         z: 5
@@ -410,10 +644,7 @@ Item {
                     }
                 }
 
-                // ----- divider: thin line with symmetric end-fades -----
-                // Implemented as three rectangles (left fade, solid mid, right fade)
-                // so we avoid pulling in QtQuick.Shapes which isn't guaranteed
-                // to be available in every Quickshell install.
+                // ----- divider -----
                 Item {
                     id: divider
                     width: normalGrid.width
@@ -450,7 +681,6 @@ Item {
                 }
 
                 // ----- special workspace strip + create tile -----
-                // Same wrapper pattern as the normal grid above.
                 Item {
                     id: specialGridWrap
                     implicitWidth:  specialGrid.implicitWidth
@@ -472,9 +702,13 @@ Item {
                                 wsId: modelData.id
                                 wsName: modelData.name
                                 special: true
-                                windows: modelData.windows
+                                windowsModel: HyprData.windowsFor(modelData.id)
                                 monW: modelData.monW
                                 monH: modelData.monH
+                                previewsActive: overview.active
+                                dropHighlight: overview.dragActive
+                                               && overview.dropTargetKey === ("s:" + index)
+                                draggingAddress: overview.dragActive ? overview.dragAddress : ""
                                 Component.onCompleted: {
                                     let m = overview.specialTiles
                                     m[index] = this
@@ -499,15 +733,27 @@ Item {
                                     overview.close()
                                 }
                                 onWindowMiddleClicked: function(addr) {
-                                    Hyprland.dispatch("closewindow address:" + addr)
-                                    HyprData.refresh()
+                                    overview._closeWindow(modelData.id, addr)
+                                }
+                                onWindowDragStarted: function(payload) {
+                                    overview._onWindowDragStarted(modelData.id, payload)
+                                }
+                                onWindowDragMoved: function(gx, gy) {
+                                    overview._onWindowDragMoved(gx, gy)
+                                }
+                                onWindowDragEnded: function(gx, gy) {
+                                    overview._onWindowDragEnded(gx, gy)
+                                }
+                                onWindowHoverEntered: function(title, gx, gy, w, h) {
+                                    overview._onWindowHoverEntered(title, gx, gy, w, h)
+                                }
+                                onWindowHoverExited: function(title) {
+                                    overview._onWindowHoverExited(title)
                                 }
                             }
                         }
 
-                        // "+" tile — visually a regular empty workspace tile whose
-                        // label is just "+" (no oversized glyph, no subtitle), to
-                        // match the "Empty" wording used on real empty workspaces.
+                        // "+" tile
                         Item {
                             id: plusTile
 
@@ -527,14 +773,17 @@ Item {
 
                             Rectangle {
                                 id: plusBg
+                                readonly property bool isDropTarget:
+                                    overview.dragActive && overview.dropTargetKey === "plus"
                                 anchors.fill: parent
                                 radius: Config.tileRadius
                                 color: Config.tileBackground
-                                border.width: Config.borderWidth
-                                border.color: plusHover.hovered ? Config.hoverOutline : Config.panelBorder
+                                border.width: isDropTarget ? Config.selectedBorderWidth : Config.borderWidth
+                                border.color: isDropTarget
+                                              ? Config.specialAccent
+                                              : (plusHover.hovered ? Config.hoverOutline : Config.panelBorder)
                                 Behavior on border.color { ColorAnimation { duration: 90 } }
 
-                                // label rendered identically to the "Empty" hint
                                 Text {
                                     anchors.centerIn: parent
                                     text: "+"
@@ -555,11 +804,139 @@ Item {
                         }
                     }
 
-                    // overlay anchored to the special grid, sharing its coord space
                     Item {
                         anchors.fill: specialGrid
                         z: 5
                         SelectionIndicator { id: specialIndicator }
+                    }
+                }
+            }
+
+            // ---- DRAG GHOST ----
+            Item {
+                id: dragGhost
+                visible: overview.dragActive
+                opacity: overview.dragActive ? 0.95 : 0
+                Behavior on opacity { NumberAnimation { duration: 100 } }
+                z: 1000
+                width:  overview.dragW
+                height: overview.dragH
+                x: overview.dragX
+                y: overview.dragY
+
+                Rectangle {
+                    id: ghostRect
+                    anchors.fill: parent
+                    radius: 3
+                    color: Config.windowFill
+                    border.width: 1
+                    border.color: Config.selectedOutline
+                    clip: true
+
+                    Loader {
+                        anchors.fill: parent
+                        active: Config.livePreviews && overview.dragActive && !!overview.dragWl
+                        sourceComponent: ScreencopyView {
+                            anchors.fill: parent
+                            live: true
+                            captureSource: overview.dragWl
+                            opacity: hasContent ? 1 : 0
+                            Behavior on opacity { NumberAnimation { duration: 80 } }
+                        }
+                    }
+
+                    // Window icon — bottom-left corner badge, declared AFTER
+                    // the Loader so it stacks above the live preview. Matches
+                    // the same corner-badge style as regular WorkspaceTile
+                    // window thumbnails.
+                    Image {
+                        anchors {
+                            left: parent.left
+                            bottom: parent.bottom
+                            leftMargin: 3
+                            bottomMargin: 3
+                        }
+                        visible: Config.showWindowIcons
+                        opacity: Config.windowIconOpacity
+                        readonly property real s:
+                            Math.min(parent.width, parent.height) * 0.35
+                        width:  Math.max(10, Math.min(Config.windowIconMax, s))
+                        height: width
+                        source: overview.dragIcon || ""
+                        sourceSize.width: 32
+                        sourceSize.height: 32
+                        fillMode: Image.PreserveAspectFit
+                        asynchronous: true
+                        smooth: true
+                        cache: true
+                    }
+                }
+            }
+
+            // ---- HOVER TOOLTIP ----
+            // Floats above everything (z=1001 > drag ghost at z=1000). Anchors
+            // to the hovered window box's global position, then maps back into
+            // panel coordinates. Wraps text past Config.tooltipMaxWidthFactor *
+            // tile width. Clamped to stay inside the panel bounds.
+            Item {
+                id: tooltipLayer
+                anchors.fill: parent
+                z: 1001
+                visible: overview._ttTitle.length > 0
+                Rectangle {
+                    id: tooltip
+                    radius: 6
+                    color: Config.tooltipBg
+                    border.width: 1
+                    border.color: Config.panelBorder
+                    opacity: overview._ttTitle.length > 0 ? 1 : 0
+                    Behavior on opacity { NumberAnimation { duration: 90 } }
+
+                    readonly property real maxW:
+                        Config.previewWidth * Config.tooltipMaxWidthFactor
+                    readonly property real pad: Config.tooltipPadding
+                    readonly property real gap: Config.tooltipGap
+
+                    // map the hovered window's top-left into panel coords
+                    readonly property real anchorPanelX: {
+                        const p = panel.mapFromGlobal(overview._ttAnchorX,
+                                                      overview._ttAnchorY)
+                        return p.x
+                    }
+                    readonly property real anchorPanelY: {
+                        const p = panel.mapFromGlobal(overview._ttAnchorX,
+                                                      overview._ttAnchorY)
+                        return p.y
+                    }
+
+                    implicitWidth:  Math.min(tooltipText.implicitWidth + pad * 2, maxW)
+                    implicitHeight: tooltipText.implicitHeight + pad * 2
+                    width:  implicitWidth
+                    height: implicitHeight
+
+                    // horizontal: center under hovered window. Tooltip may
+                    // overflow the panel — that's intentional, the user wants
+                    // to read the full title even on narrow grids.
+                    x: anchorPanelX + overview._ttAnchorW / 2 - width / 2
+
+                    // vertical: place above or below per Config.tooltipPosition.
+                    // We don't clamp — long titles flowing off-screen is
+                    // explicitly allowed.
+                    y: Config.tooltipPosition === "below"
+                       ? (anchorPanelY + overview._ttAnchorH + gap)
+                       : (anchorPanelY - height - gap)
+
+                    Text {
+                        id: tooltipText
+                        anchors.centerIn: parent
+                        width: tooltip.width - tooltip.pad * 2
+                        text: overview._ttTitle
+                        color: Config.textColor
+                        wrapMode: Text.WordWrap
+                        horizontalAlignment: Text.AlignHCenter
+                        font.pixelSize: Config.labelPixelSize
+                        font.family: Config.fontFamily.length > 0
+                                     ? Config.fontFamily : Qt.application.font.family
                     }
                 }
             }
