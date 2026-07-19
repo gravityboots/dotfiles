@@ -127,12 +127,20 @@ QtObject {
         if (lc.indexOf("-") >= 0) candidates.push(lc.replace(/-/g, "_"))
 
         let result = ""
+        let hit = false
         for (const c of candidates) {
             const p = Quickshell.iconPath(c, true)
-            if (p && p.length > 0) { result = p; break }
+            if (p && p.length > 0) { result = p; hit = true; break }
         }
-        if (!result) result = Quickshell.iconPath(fallback)
-        data._iconCache[cls] = result
+        if (!hit) result = Quickshell.iconPath(fallback)
+        // Only cache SUCCESSFUL theme lookups. If we fell through to the
+        // fallback icon, don't cache — DesktopEntries.heuristicLookup may
+        // not yet be populated (e.g. when the program was launched from a
+        // terminal moments before the first overview open), and a later
+        // call may succeed. This prevents "wrong icon for random apps on
+        // first-launch-from-terminal" — subsequent resolves get a fresh
+        // shot until they actually resolve to a real theme icon.
+        if (hit) data._iconCache[cls] = result
         return result
     }
 
@@ -275,12 +283,13 @@ QtObject {
             title:    c.title || "",
             cls:      c.class || c.initialClass || "",
             icon:     data.resolveIcon(c.class || c.initialClass || "",
-                                       Config.fallbackIcon),
-            // wl handle for ScreencopyView — populated directly into the
-            // ListModel row so the Loader can bind to model.wl rather than
-            // depending on a separate JS-object map reactivity. May be null
-            // briefly for brand-new windows; refreshed on every sync.
-            wl: data.handleByAddr[addr] || null
+                                       Config.fallbackIcon)
+            // wl handle is NOT stored as a ListModel role. Qt's ListModel
+            // refuses to reliably create a role for a QObject reference and
+            // set()-ing one later can segfault. Instead, consumers look up
+            // the wayland handle by address via HyprData.handleByAddr —
+            // which is a `var` property that fires its change signal on
+            // reassignment, so bindings that reference it stay reactive.
         }
     }
 
@@ -361,16 +370,17 @@ QtObject {
                     // Detect changes that should trigger a set():
                     //   - geometry (rx/ry/rw/rh) — common after re-tile
                     //   - floating/title — minor updates
-                    //   - wl handle going from null → handle (this is what
-                    //     turns a gray box into a live preview when the
-                    //     wayland-side handle arrives later than hyprctl
-                    //     reported the address)
-                    const wlChanged = (!row.wl && !!f.wl) || (!!row.wl && !f.wl)
+                    //   - icon — the initial resolveIcon() call for a
+                    //     brand-new window (or one seen before
+                    //     DesktopEntries populated) may return the generic
+                    //     fallback URL. Once DesktopEntries has loaded and
+                    //     resolveIcon returns a real theme icon on a later
+                    //     sync, we `set()` the row so the tile updates.
                     if (row.rx !== f.rx || row.ry !== f.ry
                         || row.rw !== f.rw || row.rh !== f.rh
                         || row.floating !== f.floating
                         || row.title !== f.title
-                        || wlChanged) {
+                        || row.icon !== f.icon) {
                         lm.set(i, f)
                     }
                     newAddrToWs[addr] = wsid
@@ -584,8 +594,7 @@ QtObject {
                             floating: r.floating,
                             title: r.title,
                             cls: r.cls,
-                            icon: r.icon,
-                            wl: r.wl || data.handleByAddr[addr] || null
+                            icon: r.icon
                         }
                         oldLm.remove(i)
                         break

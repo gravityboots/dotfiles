@@ -9,10 +9,11 @@ import Quickshell.Hyprland
 // ListModel is mutated in place by HyprData on Hyprland events — appending
 // a row creates exactly one new delegate; removing a row destroys exactly
 // one delegate; setting a row updates only the changed properties on the
-// existing delegate. The ScreencopyView's `captureSource` reads `model.wl`
-// directly from the ListModel row — populated and refreshed by HyprData on
-// every sync, so newly-opened windows light up the moment their wayland
-// handle becomes available.
+// existing delegate. The ScreencopyView's `captureSource` reads the wayland
+// handle from `HyprData.handleByAddr[address]` — a separate map that's kept
+// live by HyprData on Wayland toplevel changes. Reassigning the map fires
+// its property-change signal so bindings that reference it re-evaluate the
+// moment a new handle becomes available.
 Item {
     id: tile
 
@@ -144,21 +145,54 @@ Item {
                     border.color: Config.windowBorder
                     clip: true
 
-                    // live preview via wayland screencopy. The handle is stored
-                    // in the ListModel row's `wl` role, populated by HyprData's
-                    // geometry sync. Binding to `model.wl` directly means the
-                    // Loader reactivates the moment the row's wl handle is
-                    // updated via lm.set() — no map-binding lag, no gray box
-                    // hanging around after open.
+                    // live preview via wayland screencopy. The handle is looked
+                    // up by address from HyprData.handleByAddr — a `var`
+                    // property that Qt's ListModel can't store as a role
+                    // reliably (ListModels drop QObject-typed roles and can
+                    // segfault on set()), so we keep it in a separate map.
+                    // Reassigning the map fires its property-change signal, so
+                    // this binding re-evaluates every time the map updates.
+                    //
+                    // Backing: we wrap the ScreencopyView in an explicitly
+                    // opaque Rectangle whose color depends on Config. Without
+                    // this, apps with transparent surfaces (transparent
+                    // terminals, VSCode with transparency) write partial
+                    // alpha into our render, and since the overview panel is
+                    // itself semi-transparent, the desktop wallpaper shows
+                    // through the tile — "x-ray" effect. The backing forces
+                    // a fully opaque source underneath.
                     Loader {
                         anchors.fill: parent
-                        active: tile.previewsActive && Config.livePreviews && !!model.wl
-                        sourceComponent: ScreencopyView {
+                        active: tile.previewsActive && Config.livePreviews
+                                && !!HyprData.handleByAddr[model.address]
+                        sourceComponent: Item {
                             anchors.fill: parent
-                            live: true
-                            captureSource: model.wl || null
-                            opacity: hasContent ? 1 : 0
-                            Behavior on opacity { NumberAnimation { duration: 120 } }
+                            Image {
+                                anchors.fill: parent
+                                visible: Config.previewBackground === "wallpaper"
+                                         && Config.wallpaperPath.length > 0
+                                source: Config.wallpaperPath.length > 0
+                                        ? ("file://" + Config.wallpaperPath)
+                                        : ""
+                                fillMode: Image.PreserveAspectCrop
+                                asynchronous: true
+                                cache: true
+                                smooth: true
+                            }
+                            Rectangle {
+                                anchors.fill: parent
+                                visible: Config.previewBackground !== "wallpaper"
+                                         || Config.wallpaperPath.length === 0
+                                color: Config.windowFill
+                            }
+                            ScreencopyView {
+                                anchors.fill: parent
+                                live: true
+                                captureSource: HyprData.handleByAddr[model.address]
+                                               || null
+                                opacity: hasContent ? 1 : 0
+                                Behavior on opacity { NumberAnimation { duration: 120 } }
+                            }
                         }
                     }
 
@@ -251,7 +285,7 @@ Item {
                                     address: model.address,
                                     icon:    model.icon,
                                     title:   model.title,
-                                    wl:      model.wl || null,
+                                    wl:      HyprData.handleByAddr[model.address] || null,
                                     w:       winBox.width,
                                     h:       winBox.height,
                                     grabDX:  cur.x - tl.x,

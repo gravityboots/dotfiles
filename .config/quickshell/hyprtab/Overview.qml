@@ -836,12 +836,33 @@ Item {
                     Loader {
                         anchors.fill: parent
                         active: Config.livePreviews && overview.dragActive && !!overview.dragWl
-                        sourceComponent: ScreencopyView {
+                        sourceComponent: Item {
                             anchors.fill: parent
-                            live: true
-                            captureSource: overview.dragWl
-                            opacity: hasContent ? 1 : 0
-                            Behavior on opacity { NumberAnimation { duration: 80 } }
+                            Image {
+                                anchors.fill: parent
+                                visible: Config.previewBackground === "wallpaper"
+                                         && Config.wallpaperPath.length > 0
+                                source: Config.wallpaperPath.length > 0
+                                        ? ("file://" + Config.wallpaperPath)
+                                        : ""
+                                fillMode: Image.PreserveAspectCrop
+                                asynchronous: true
+                                cache: true
+                                smooth: true
+                            }
+                            Rectangle {
+                                anchors.fill: parent
+                                visible: Config.previewBackground !== "wallpaper"
+                                         || Config.wallpaperPath.length === 0
+                                color: Config.windowFill
+                            }
+                            ScreencopyView {
+                                anchors.fill: parent
+                                live: true
+                                captureSource: overview.dragWl
+                                opacity: hasContent ? 1 : 0
+                                Behavior on opacity { NumberAnimation { duration: 80 } }
+                            }
                         }
                     }
 

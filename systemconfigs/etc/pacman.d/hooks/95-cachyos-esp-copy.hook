@@ -13,4 +13,4 @@ Target = boot/intel-ucode.img
 [Action]
 Description = Copying kernel and initramfs to ESP for rEFInd...
 When = PostTransaction
-Exec = /usr/bin/sh -c "for f in vmlinuz-linux-cachyos initramfs-linux-cachyos.img initramfs-linux-cachyos-fallback.img vmlinuz-linux-cachyos-lts initramfs-linux-cachyos-lts.img amd-ucode.img intel-ucode.img; do [ -f /boot/$f ] && cp /boot/$f /boot/efi/EFI/cachyos/; done; true"
+Exec = /usr/bin/sh -c "mountpoint -q /boot/efi || mount /boot/efi; for f in vmlinuz-linux-cachyos initramfs-linux-cachyos.img initramfs-linux-cachyos-fallback.img vmlinuz-linux-cachyos-lts initramfs-linux-cachyos-lts.img amd-ucode.img intel-ucode.img; do [ -f /boot/$f ] && cp /boot/$f /boot/efi/EFI/cachyos/; done; true"

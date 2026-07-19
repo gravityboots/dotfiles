@@ -1,27 +1,93 @@
 pragma Singleton
 import QtQuick
+import Quickshell
+import Quickshell.Io
 
 // All configuration for hyprtab. Both AltTab and Overview read from here.
-// Edit values; nothing else in the project should hardcode UI numbers/colors.
+// Edit values below; nothing else in the project should hardcode UI colors or
+// magic numbers.
+//
+// COLOR SOURCING:
+//   By default, colors are pulled from ~/.config/noctalia/colors.json on
+//   startup (and hot-reloaded when that file changes). Each color property
+//   below has a hardcoded fallback that's used if:
+//     - useNoctaliaColors is false
+//     - the file doesn't exist or fails to parse
+//     - the specific Noctalia field is missing
+//   To fully customize, set useNoctaliaColors to false and edit the hex
+//   values directly.
 QtObject {
     id: cfg
 
     //=========================================================================
-    //  COLORS  (Noctalia dark theme defaults)
+    //  NOCTALIA COLOR INTEGRATION
     //=========================================================================
-    property color backgroundColor:    "#010409"   // mSurface
-    property color selectedBackground: "#58a6ff"   // mPrimary — selection wash
-    property color textColor:          "#c9d1d9"   // mOnSurface
-    property color selectedOutline:    "#58a6ff"   // mPrimary — selection ring
-    property color panelBorder:        "#30363d"   // mOutline
-    property color tileBackground:     "#161b22"   // mSurfaceVariant — mini-desktop "screen"
-    property color hoverOutline:       "#8b949e"   // mOnSurfaceVariant — tile hover border
-    property color windowFill:         "#21262d"   // mHover — window box fill
-    property color windowBorder:       "#484f58"   // window box outline
-    property color selectedTextColor:  "#c9d1d9"   // mOnSurface — label of selected tile
-    property color backdropColor:      "#010409"   // dim behind the panel
-    property color dividerColor:       "#8b949e"   // mOnSurfaceVariant — overview divider line
-    property color specialAccent:      "#bc8cff"   // mTertiary — special workspace accent
+    // Read colors from Noctalia's palette file. When true, the theme values
+    // below are overridden by whatever Noctalia has set. Turn off to fully
+    // control colors from this file.
+    property bool useNoctaliaColors: true
+    // Path to Noctalia's colors.json. Watched for changes on disk.
+    property string noctaliaColorsPath: Quickshell.env("HOME") + "/.config/noctalia/colors.json"
+    // "dark" or "light" — which variant of the palette to use. Noctalia's
+    // JSON has both. Default to dark since this shell is dark-themed.
+    property string noctaliaVariant: "dark"
+
+    // Parsed Noctalia palette (an object with the mX fields). Empty {} until
+    // the file loads (or if disabled / missing).
+    property var _noctaliaPalette: ({})
+
+    property FileView _noctaliaFile: FileView {
+        path: cfg.useNoctaliaColors && cfg.noctaliaColorsPath.length > 0
+              ? cfg.noctaliaColorsPath : ""
+        watchChanges: cfg.useNoctaliaColors
+        onFileChanged: reload()
+        onLoaded: cfg._parseNoctaliaFile()
+        onLoadFailed: cfg._noctaliaPalette = ({})
+    }
+
+    function _parseNoctaliaFile() {
+        try {
+            const raw = _noctaliaFile.text()
+            if (!raw || raw.length === 0) {
+                cfg._noctaliaPalette = ({}); return
+            }
+            const parsed = JSON.parse(raw)
+            // Noctalia palettes have {"dark": {...}, "light": {...}} at the
+            // top level. Colors are also sometimes stored flat (older schemes)
+            // — support both shapes.
+            let p = parsed[cfg.noctaliaVariant]
+            if (!p && parsed.mSurface !== undefined) p = parsed
+            cfg._noctaliaPalette = p || ({})
+        } catch (e) {
+            console.warn("hyprtab: failed to parse Noctalia colors:", e)
+            cfg._noctaliaPalette = ({})
+        }
+    }
+
+    // Small helper: return the Noctalia value for `key` if colors are enabled
+    // and the palette has it, else return the given fallback.
+    function _nc(key, fallback) {
+        if (!cfg.useNoctaliaColors) return fallback
+        const v = cfg._noctaliaPalette[key]
+        return (typeof v === "string" && v.length > 0) ? v : fallback
+    }
+
+    //=========================================================================
+    //  COLORS   (bind through _nc() so Noctalia can override the fallback)
+    //=========================================================================
+    property color backgroundColor:    _nc("mSurface",         "#010409")
+    property color selectedBackground: _nc("mPrimary",         "#58a6ff")
+    property color textColor:          _nc("mOnSurface",       "#c9d1d9")
+    property color selectedOutline:    _nc("mPrimary",         "#58a6ff")
+    property color panelBorder:        _nc("mOutline",         "#30363d")
+    property color tileBackground:     _nc("mSurfaceVariant",  "#161b22")
+    property color hoverOutline:       _nc("mOnSurfaceVariant","#8b949e")
+    property color windowFill:         _nc("mHover",           "#21262d")
+    property color windowBorder:       _nc("mOutline",         "#484f58")
+    property color selectedTextColor:  _nc("mOnSurface",       "#c9d1d9")
+    property color backdropColor:      _nc("mSurface",         "#010409")
+    property color dividerColor:       _nc("mOnSurfaceVariant","#8b949e")
+    property color specialAccent:      _nc("mTertiary",        "#bc8cff")
 
     //=========================================================================
     //  OPACITIES
@@ -30,16 +96,18 @@ QtObject {
     // Per-view panel background opacity.
     property real altTabBackgroundOpacity:   0.85
     property real overviewBackgroundOpacity: 0.85
-    property real backdropOpacity:     0.15   // legacy default (unused; kept for back-compat)
-    // Per-view backdrop (full-screen dim layer) opacity.
-    property real altTabBackdropOpacity:   0.15
-    property real overviewBackdropOpacity: 0.15
+    // Backdrop = full-screen dim layer behind the panel. Set to 0 to let
+    // Hyprland's blur / whatever's underneath show through cleanly. Non-zero
+    // adds a translucent dark wash over the whole screen while the menu is up.
+    property real backdropOpacity:     0.0    // legacy default (unused; kept for back-compat)
+    property real altTabBackdropOpacity:   0.0
+    property real overviewBackdropOpacity: 0.0
     property real selectedTint:        0.15
 
     // Pre-computed panel backgrounds (color + opacity baked in). Bind to these
-    // instead of recomputing Qt.rgba() in every consumer — saves a function
-    // call per re-evaluation. These re-evaluate only when their dependencies
-    // change, which is essentially never at runtime.
+    // instead of recomputing Qt.rgba() in every consumer. They re-evaluate
+    // when backgroundColor changes — which happens automatically when the
+    // Noctalia palette file changes on disk.
     readonly property color altTabPanelBg:
         Qt.rgba(backgroundColor.r, backgroundColor.g, backgroundColor.b,
                 altTabBackgroundOpacity)
@@ -77,40 +145,39 @@ QtObject {
     //  OVERVIEW SPECIFIC
     //=========================================================================
     property int  overviewColumns:     5      // workspaces per row (sequential)
-    property int  overviewRows:        2      // number of normal rows shown (workspaces = rows*cols)
+    property int  overviewRows:        2      // number of normal rows (workspaces = rows * cols)
     property int  specialColumns:      5      // special workspace tiles per row
     property real overviewPreviewWidth: 250   // can match previewWidth; separate so you can tune
     property real dividerHeight:       1
-    property real dividerSideFade:     90     // pixels of fade on each end of divider
+    property real dividerSideFade:     90     // px of fade on each end of divider
     property real specialStripGap:     10     // gap above & below the divider
 
     //=========================================================================
     //  PREVIEWS
     //=========================================================================
-    property bool livePreviews:        true   // live wayland screencopy of each window
+    property bool livePreviews:        true    // live wayland screencopy
     property bool showWindowIcons:     true
     property real windowIconMax:       30
     property real windowIconOpacity:   0.85
+    // Preview background: either "solid" (windowFill under the ScreencopyView,
+    // opaque) or "wallpaper" (user's desktop wallpaper image under it, also
+    // opaque). Either mode fixes the "transparent windows x-ray through the
+    // overview" bug. Wallpaper mode looks nicer for transparent apps.
+    property string previewBackground: "solid"    // "solid" | "wallpaper"
+    // Path to the wallpaper image to use when previewBackground is "wallpaper".
+    // Absolute path. Leave empty to fall back to solid.
+    property string wallpaperPath:     ""
 
     //=========================================================================
     //  HOVER TOOLTIP  (window title popup on hover)
     //=========================================================================
-    // Whether to show a tooltip with the window title when hovering a window.
     property bool   tooltipEnabled:        true
-    // Delay before the tooltip appears, in ms. 0 = instant.
     property int    tooltipDelayMs:        10
-    // Tooltip max width as a multiple of the tile width. Text wraps past this.
     property real   tooltipMaxWidthFactor: 1.5
-    // Tooltip padding inside the box (px).
     property real   tooltipPadding:        8
-    // Tooltip background opacity (the body is Config.backgroundColor at this
-    // alpha). The border is panelBorder.
     property real   tooltipBgOpacity:      0.95
-    // Vertical gap between the hovered window and the tooltip (px).
     property real   tooltipGap:            4
-    // Where to position the tooltip relative to the hovered window.
-    // "above" or "below". May overflow the panel — that's allowed.
-    property string tooltipPosition:       "above"
+    property string tooltipPosition:       "above"   // "above" | "below"
 
     //=========================================================================
     //  TYPOGRAPHY
@@ -122,11 +189,11 @@ QtObject {
     //  BEHAVIOR
     //=========================================================================
     property bool   skipUnmapped:             true
-    property bool   includeSpecialWorkspaces: false  // alt-tab only: include specials in cycle?
+    property bool   includeSpecialWorkspaces: false  // alt-tab: include specials in cycle?
     property int    maxHistory:               12
     property string fallbackIcon:             "application-x-executable"
 
     // Default name prefix used when creating new special workspaces with the +
-    // button (matches Shanu-Kumawat/quickshell-overview behavior).
+    // button.
     property string newSpecialPrefix:         "stash"
 }

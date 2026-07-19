@@ -26,6 +26,8 @@ btop
 btrfs-assistant
 btrfs-progs
 cachyos-fish-config
+cachyos-gaming-applications
+cachyos-gaming-meta
 cachyos-grub-theme
 cachyos-hello
 cachyos-hooks
@@ -54,6 +56,7 @@ ddcutil
 decibels
 device-mapper
 diffutils
+dkms
 dmidecode
 dmraid
 dnsmasq
@@ -84,6 +87,7 @@ gnome-calendar
 gnome-characters
 gnome-chess
 gnome-clocks
+gnome-disk-utility
 gnome-font-viewer
 gnome-keyring
 gnome-maps
@@ -110,6 +114,7 @@ gst-plugin-va
 gst-plugins-bad
 gst-plugins-ugly
 hdparm
+helium-browser-bin
 hwdetect
 hwinfo
 hypridle
@@ -147,6 +152,7 @@ linux-cachyos-lts-headers
 linux-cachyos-lts-nvidia-open
 linux-cachyos-nvidia-open
 linux-firmware
+linux-headers
 localsend
 logrotate
 loupe
@@ -180,6 +186,7 @@ neovim
 netctl
 networkmanager
 networkmanager-openvpn
+nextdns-bin
 nfs-utils
 nilfs-utils
 nitch-nonerd
@@ -195,11 +202,13 @@ nvidia-utils
 nvtop
 nwg-look
 obs-studio
+obsidian
 octopi
 opencl-nvidia
 openssh
 os-prober
 otf-geist-mono-nerd
+otf-minecraft
 pacman-contrib
 pandoc-cli
 papers
@@ -215,6 +224,7 @@ pkgfile
 playerctl
 plocate
 plymouth
+polkit-gnome
 polkit-kde-agent
 poppler-glib
 power-profiles-daemon
@@ -269,11 +279,13 @@ switcheroo-control
 sysc-greet-hyprland
 sysfsutils
 termius
+texlive-fontsrecommended
 the_silver_searcher
 tokyonight-gtk-theme-git
 ttf-bitstream-vera
 ttf-cascadia-code-nerd
 ttf-cascadia-mono-nerd
+ttf-cmu-serif
 ttf-dejavu
 ttf-jetbrains-mono
 ttf-jetbrains-mono-nerd
@@ -292,6 +304,7 @@ usb_modeswitch
 usbutils
 uwsm
 vesktop
+victus-control-bin
 vim
 vlc
 vlc-plugins-all
@@ -317,6 +330,7 @@ xdg-user-dirs
 xf86-video-amdgpu
 xfsprogs
 xl2tpd
+xnviewmp
 xorg-xwayland
 yadm
 yay
