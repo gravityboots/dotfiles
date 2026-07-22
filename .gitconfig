@@ -1,3 +1,8 @@
 [user]
 	email = 117709053+gravityboots@users.noreply.github.com
-	name = gravityboots
+	name = Gravityboots
+[filter "lfs"]
+	clean = git-lfs clean -- %f
+	smudge = git-lfs smudge -- %f
+	process = git-lfs filter-process
+	required = true
