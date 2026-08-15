@@ -7,8 +7,10 @@ cmatrix-git
 dmalloc
 flif
 gslapper
+hplip-plugin
 hyprquickframe-git
 jack
+kvantum-theme-catppuccin-git
 libcava
 libfpx
 libsoup
@@ -21,13 +23,16 @@ nchat
 nextdns-bin
 nitch-nonerd
 openssl-1.1
+osu-lazer-bin
+osu-mime
 otf-minecraft
+packettracer
 peaclock
-pinta
 pipes.sh
 pstoedit-nomagick
 python-customtkinter
 python-materialyoucolor
+python-pkg_resources
 quickshell-overview-git
 rxfetch
 safeeyes
@@ -44,3 +49,4 @@ ttf-ms-fonts
 victus-control-bin
 vscodium-bin
 xnviewmp
+ytdlp-gui-bin
