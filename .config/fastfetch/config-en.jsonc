@@ -21,18 +21,18 @@
         { "type": "title", "keyWidth": 0, "color": {"user": "bright_blue","at": "white","host": "bright_blue"} },
         { "type": "custom", "format": "{#30}⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶⠶ {#37}初心忘るべからず" },
         "break",
-        { "key": "󰻀  オーエス  ", "type": "os", "keyColor": "cyan" },
-        { "key": "󰌢  カーネル  ", "type": "kernel", "keyColor": "cyan" },
-        { "key": "󱂬  ウィンマ  ", "type": "wm", "keyColor": "cyan" },
-        { "key": "󰆍  シェル    ", "type": "shell", "keyColor": "cyan" },
+        { "key": "󰻀  os       ", "type": "os", "keyColor": "cyan" },
+        { "key": "󰌢  kernel   ", "type": "kernel", "keyColor": "cyan" },
+        { "key": "󱂬  wm       ", "type": "wm", "keyColor": "cyan" },
+        { "key": "󰆍  shell    ", "type": "shell", "keyColor": "cyan" },
         "break",
-        { "key": "󰍹  ホースト  ", "type": "host", "keyColor": "green" },
-        { "key": "󰍛  シーピユ  ", "type": "cpu", "keyColor": "green", "showPerCoreCount": true },
-        { "key": "  メモリ    ", "type": "memory", "keyColor": "green" },
+        { "key": "󰍹  host     ", "type": "host", "keyColor": "green" },
+        { "key": "󰍛  cpu      ", "type": "cpu", "keyColor": "green", "showPerCoreCount": true },
+        { "key": "  memory   ", "type": "memory", "keyColor": "green" },
         // { "type": "disk", "key": "󰋊  Disk   ", "keyColor": "green", "folders": "/" },
         "break",
-        { "key": "󰏖  パケジ    ", "type": "packages", "keyColor": "magenta" },
-        { "key": "󰩟  ネット    ", "type": "localip", "keyColor": "magenta", "showIpv4": true, "showIpv6": false },
-        { "key": "󰮯  フェッチ  ", "type": "custom", "format": "\u001b[33m󰮯 \u001b[30m󰊠 \u001b[31m󰊠 \u001b[32m󰊠 \u001b[34m󰊠 \u001b[35m󰊠 \u001b[36m󰊠 \u001b[37m󰊠", "keyColor": "magenta" }
+        { "key": "󰏖  pkgs     ", "type": "packages", "keyColor": "magenta" },
+        { "key": "󰩟  network  ", "type": "localip", "keyColor": "magenta", "showIpv4": true, "showIpv6": false },
+        { "key": "󰮯  fetch    ", "type": "custom", "format": "\u001b[33m󰮯 \u001b[30m󰊠 \u001b[31m󰊠 \u001b[32m󰊠 \u001b[34m󰊠 \u001b[35m󰊠 \u001b[36m󰊠 \u001b[37m󰊠", "keyColor": "magenta" }
     ]
 }
