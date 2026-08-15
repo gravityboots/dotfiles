@@ -37,9 +37,15 @@ export PATH=$PATH:/home/gravityboots/.spicetify
 export PATH="$HOME/.local/bin:$PATH"
 export PATH="$HOME/.platformio/penv/bin:$PATH"
 
+export GTK_IM_MODULE=fcitx
+export QT_IM_MODULE=fcitx
+export XMODIFIERS=@im=fcitx
+
 # for ssh agent auth for GUI & sandboxed apps; run along with systemctl --user enable --now ssh-agent
 export SSH_AUTH_SOCK="$XDG_RUNTIME_DIR/ssh-agent.socket"
 
 alias pipi='pip install --user --break-system-packages'
 alias pipu='pip uninstall --user --break-system-packages'
 alias snvim='sudo HOME=$HOME nvim'
+alias ..='cd ..'
+alias ...='cd ../..'

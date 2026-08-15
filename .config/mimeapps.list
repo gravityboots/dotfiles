@@ -61,6 +61,12 @@ text/x-pascal=nvim.desktop;
 text/xml=zen.desktop;
 image/avif=org.gnome.Loupe.desktop;
 application/x-trash=org.gnome.TextEditor.desktop
+x-scheme-handler/discord-1216669957799018608=discord-1216669957799018608.desktop
+x-scheme-handler/pttp=CiscoPacketTracerPtsa-9.0.1.desktop
+application/x-pka=CiscoPacketTracer-9.0.1.desktop
+application/x-pkt=CiscoPacketTracer-9.0.1.desktop
+application/x-pkz=CiscoPacketTracer-9.0.1.desktop
+application/x-pksz=CiscoPacketTracer-9.0.1.desktop
 
 [Added Associations]
 x-scheme-handler/http=zen.desktop;
