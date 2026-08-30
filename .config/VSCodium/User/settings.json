@@ -1,5 +1,5 @@
 {
-    "workbench.colorTheme": "Taipei Night",
+    "workbench.colorTheme": "Tokyo Night Blackout",
     "workbench.iconTheme": "catppuccin-mocha",
     "editor.fontFamily": "'JetBrainsMono Nerd Font', 'GeistMono Nerd Font', monospace",
     "terminal.integrated.fontLigatures.fallbackLigatures": [
@@ -68,6 +68,7 @@
     "window.zoomLevel": 0.5,
     "code-runner.runInTerminal": true,
     "editor.fontSize": 13,
+    "terminal.integrated.fontSize": 13,
     "claudeCode.preferredLocation": "panel",
     "workbench.editorAssociations": {
         "*.copilotmd": "vscode.markdown.preview.editor",
@@ -149,10 +150,9 @@
     "explorer.confirmPasteNative": false,
     "github.copilot.nextEditSuggestions.enabled": false,
     "editor.inlineSuggest.edits.showCollapsed": true,
-    "gitlens.ai.model": "vscode",
-    "gitlens.ai.vscode.model": "copilot:gpt-4.1",
     "chat.viewSessions.orientation": "stacked",
     "chat.disableAIFeatures": false,
     "terminal.integrated.initialHint": false,
-    "editor.indentSize": "tabSize"
+    "editor.indentSize": "tabSize",
+    "vscode-pets.theme": "forest"
 }

@@ -446,6 +446,7 @@
             "vesktop",
             "spotify",
             "obsidian",
+            "osu!",
             "org.prismlauncher.PrismLauncher"
         ],
         "pinnedStatic": true,
@@ -461,7 +462,7 @@
         "animationDisabled": false,
         "animationSpeed": 1.5,
         "autoStartAuth": false,
-        "avatarImage": "/home/gravityboots/Pictures/Profile Pictures/Furina.jpg",
+        "avatarImage": "/home/gravityboots/Pictures/Profile Pictures/Nanashi mumei pfp ☆.jpg",
         "boxRadiusRatio": 1,
         "clockFormat": "HH:mm:ss ",
         "clockStyle": "digital",
