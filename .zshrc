@@ -44,6 +44,9 @@ export XMODIFIERS=@im=fcitx
 # for ssh agent auth for GUI & sandboxed apps; run along with systemctl --user enable --now ssh-agent
 export SSH_AUTH_SOCK="$XDG_RUNTIME_DIR/ssh-agent.socket"
 
+export EDITOR=nvim
+export VISUAL=nvim
+
 alias pipi='pip install --user --break-system-packages'
 alias pipu='pip uninstall --user --break-system-packages'
 alias snvim='sudo HOME=$HOME nvim'
