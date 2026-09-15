@@ -154,5 +154,6 @@
     "chat.disableAIFeatures": false,
     "terminal.integrated.initialHint": false,
     "editor.indentSize": "tabSize",
-    "vscode-pets.theme": "forest"
+    "vscode-pets.theme": "forest",
+    "git.confirmSync": false
 }
