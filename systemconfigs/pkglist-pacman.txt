@@ -47,11 +47,13 @@ cachyos-zsh-config
 cantarell-fonts
 catppuccin-gtk-theme-mocha
 cava
+chntpw
 chwd
 cloudflare-speed-cli
 cmatrix-git
 cpio
 cpupower
+cronie
 cryptsetup
 cups
 cups-filters
@@ -137,6 +139,7 @@ hyprpicker
 hyprquickframe-git
 hyprshot
 inetutils
+inter-font
 iptables
 ipython
 iverilog
@@ -197,7 +200,6 @@ nautilus-admin-gtk4
 nautilus-metadata-editor
 nautilus-open-any-terminal
 ncdu
-nchat
 neofetch
 neovim
 net-tools
@@ -223,6 +225,7 @@ nwg-look
 obs-studio
 obsidian
 octopi
+openbsd-netcat
 opencl-nvidia
 openssh
 os-prober
@@ -274,7 +277,6 @@ rofi
 rsync
 rxfetch
 s-nail
-safeeyes
 satty
 sbctl
 sddm
