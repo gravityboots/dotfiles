@@ -20,26 +20,54 @@ QtObject {
     id: cfg
 
     //=========================================================================
+    //  HYPRLAND COMPATIBILITY
+    //=========================================================================
+    // Which dispatcher syntax to send Hyprland.
+    //   "auto"   - detect via Quickshell's Hyprland.usingLua, falling back to
+    //              checking for ~/.config/hypr/hyprland.lua  (default)
+    //   "always" - force Hyprland 0.55+ lua syntax
+    //   "never"  - force legacy hyprlang syntax (0.54 and older)
+    // Set this explicitly if detection guesses wrong; the symptom of guessing
+    // wrong is a log line like:
+    //   Dispatch request "focuswindow address:0x..." failed with error
+    //   "error: [string "return hl.dispatch(focuswindow address:0x..."
+    property string luaDispatch: "always"
+
+    //=========================================================================
     //  NOCTALIA COLOR INTEGRATION
     //=========================================================================
-    // Read colors from Noctalia's palette file. When true, the theme values
-    // below are overridden by whatever Noctalia has set. Turn off to fully
-    // control colors from this file.
+    // Noctalia v5 no longer ships a stable colors.json for third parties —
+    // plugins read colors through noctalia.getColor(role), and EXTERNAL apps
+    // (which hyprtab is, being a Quickshell config) are served by the
+    // TEMPLATE system instead. See README.md for the two-line Noctalia config
+    // snippet that renders the file this reads.
+    //
+    // v5 tokens are snake_case Material 3 role names (surface, on_surface,
+    // surface_variant, outline, primary, tertiary, ...). v4 used camelCase
+    // with an "m" prefix (mSurface, mOnSurface, ...). We read v5 names first
+    // and fall back to the v4 spelling, so this works on either version and
+    // across the upgrade without edits.
     property bool useNoctaliaColors: true
-    // Path to Noctalia's colors.json. Watched for changes on disk.
-    property string noctaliaColorsPath: Quickshell.env("HOME") + "/.config/noctalia/colors.json"
-    // "dark" or "light" — which variant of the palette to use. Noctalia's
-    // JSON has both. Default to dark since this shell is dark-themed.
+    // Path to the rendered color file. The default is where the README's
+    // template writes it. Watched for changes, so re-theming Noctalia
+    // re-colors hyprtab live with no restart.
+    property string noctaliaColorsPath:
+        Quickshell.env("HOME") + "/.config/noctalia/hyprtab-colors.json"
+    // Which variant to pull when the file happens to carry both (v4 shape).
+    // The v5 template renders `default`, which already follows the active
+    // theme mode, so this only matters for a v4-style file.
     property string noctaliaVariant: "dark"
 
-    // Parsed Noctalia palette (an object with the mX fields). Empty {} until
-    // the file loads (or if disabled / missing).
     property var _noctaliaPalette: ({})
 
     property FileView _noctaliaFile: FileView {
         path: cfg.useNoctaliaColors && cfg.noctaliaColorsPath.length > 0
               ? cfg.noctaliaColorsPath : ""
         watchChanges: cfg.useNoctaliaColors
+        // Not having the file is a normal state — it only exists once the
+        // user registers the Noctalia template (see README). Every color has
+        // a hardcoded fallback, so absence is silent, not an error.
+        printErrors: false
         onFileChanged: reload()
         onLoaded: cfg._parseNoctaliaFile()
         onLoadFailed: cfg._noctaliaPalette = ({})
@@ -52,11 +80,14 @@ QtObject {
                 cfg._noctaliaPalette = ({}); return
             }
             const parsed = JSON.parse(raw)
-            // Noctalia palettes have {"dark": {...}, "light": {...}} at the
-            // top level. Colors are also sometimes stored flat (older schemes)
-            // — support both shapes.
-            let p = parsed[cfg.noctaliaVariant]
-            if (!p && parsed.mSurface !== undefined) p = parsed
+            // Three shapes are accepted:
+            //   v5 template output : flat { "surface": "#...", ... }
+            //   v4 flat            : flat { "mSurface": "#...", ... }
+            //   v4 per-mode        : { "dark": {...}, "light": {...} }
+            let p = parsed
+            if (parsed.surface === undefined && parsed.mSurface === undefined) {
+                p = parsed[cfg.noctaliaVariant] || parsed
+            }
             cfg._noctaliaPalette = p || ({})
         } catch (e) {
             console.warn("hyprtab: failed to parse Noctalia colors:", e)
@@ -64,30 +95,46 @@ QtObject {
         }
     }
 
-    // Small helper: return the Noctalia value for `key` if colors are enabled
-    // and the palette has it, else return the given fallback.
-    function _nc(key, fallback) {
+    // Look up a color. `v5Key` is the snake_case Material role, `v4Key` the
+    // legacy camelCase spelling; first hit wins, else `fallback`.
+    function _nc(v5Key, v4Key, fallback) {
         if (!cfg.useNoctaliaColors) return fallback
-        const v = cfg._noctaliaPalette[key]
-        return (typeof v === "string" && v.length > 0) ? v : fallback
+        const a = cfg._noctaliaPalette[v5Key]
+        if (typeof a === "string" && a.length > 0) return a
+        const b = cfg._noctaliaPalette[v4Key]
+        if (typeof b === "string" && b.length > 0) return b
+        return fallback
     }
 
     //=========================================================================
     //  COLORS   (bind through _nc() so Noctalia can override the fallback)
     //=========================================================================
-    property color backgroundColor:    _nc("mSurface",         "#010409")
-    property color selectedBackground: _nc("mPrimary",         "#58a6ff")
-    property color textColor:          _nc("mOnSurface",       "#c9d1d9")
-    property color selectedOutline:    _nc("mPrimary",         "#58a6ff")
-    property color panelBorder:        _nc("mOutline",         "#30363d")
-    property color tileBackground:     _nc("mSurfaceVariant",  "#161b22")
-    property color hoverOutline:       _nc("mOnSurfaceVariant","#8b949e")
-    property color windowFill:         _nc("mHover",           "#21262d")
-    property color windowBorder:       _nc("mOutline",         "#484f58")
-    property color selectedTextColor:  _nc("mOnSurface",       "#c9d1d9")
-    property color backdropColor:      _nc("mSurface",         "#010409")
-    property color dividerColor:       _nc("mOnSurfaceVariant","#8b949e")
-    property color specialAccent:      _nc("mTertiary",        "#bc8cff")
+    property color backgroundColor:
+        _nc("surface",                "mSurface",          "#010409")
+    property color selectedBackground:
+        _nc("primary",                "mPrimary",          "#58a6ff")
+    property color textColor:
+        _nc("on_surface",             "mOnSurface",        "#c9d1d9")
+    property color selectedOutline:
+        _nc("primary",                "mPrimary",          "#58a6ff")
+    property color panelBorder:
+        _nc("outline",                "mOutline",          "#30363d")
+    property color tileBackground:
+        _nc("surface_variant",        "mSurfaceVariant",   "#161b22")
+    property color hoverOutline:
+        _nc("on_surface_variant",     "mOnSurfaceVariant", "#8b949e")
+    property color windowFill:
+        _nc("surface_container_high", "mHover",            "#21262d")
+    property color windowBorder:
+        _nc("outline_variant",        "mOutline",          "#484f58")
+    property color selectedTextColor:
+        _nc("on_surface",             "mOnSurface",        "#c9d1d9")
+    property color backdropColor:
+        _nc("surface",                "mSurface",          "#010409")
+    property color dividerColor:
+        _nc("on_surface_variant",     "mOnSurfaceVariant", "#8b949e")
+    property color specialAccent:
+        _nc("tertiary",               "mTertiary",         "#bc8cff")
 
     //=========================================================================
     //  OPACITIES

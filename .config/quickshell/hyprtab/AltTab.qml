@@ -57,7 +57,17 @@ Item {
     //=========================================================================
     //  GLOBAL SHORTCUTS
     //=========================================================================
-    GlobalShortcut { appid: "hyprtab"; name: "mod";      onReleased: if (alttab.active || alttab.armed) alttab.accept() }
+    // Set the first time the `mod` global shortcut delivers a press. If it
+    // never does — which is the case when the compositor doesn't match the
+    // modifier bind — we must not trust modShortcut.pressed, because a
+    // permanently-false `pressed` would make the arm timer commit on every
+    // single Alt+Tab and the panel would never appear at all.
+    property bool _modSeen: false
+
+    GlobalShortcut { id: modShortcut
+                     appid: "hyprtab"; name: "mod"
+                     onPressed: alttab._modSeen = true
+                     onReleased: if (alttab.active || alttab.armed) alttab.accept() }
     GlobalShortcut { appid: "hyprtab"; name: "next";     onPressed: alttab.cycle(1) }
     GlobalShortcut { appid: "hyprtab"; name: "prev";     onPressed: alttab.cycle(-1) }
     GlobalShortcut { appid: "hyprtab"; name: "accept";   onPressed: alttab.accept() }
@@ -69,10 +79,24 @@ Item {
         interval: Math.max(0, Config.armDelayMs)
         repeat: false
         onTriggered: {
-            if (alttab.armed && !alttab.active) {
-                alttab.armed = false
-                alttab.active = true
+            if (!alttab.armed || alttab.active) return
+
+            // If the `mod` shortcut is actually working, we can tell whether
+            // Alt is still physically down. Already up means the user did a
+            // quick tap and the release raced this timer — commit silently
+            // rather than popping the panel open with nothing to dismiss it.
+            //
+            // Guarded on _modSeen: only meaningful once we've observed at
+            // least one press from this shortcut. Without that guard, a
+            // non-delivering shortcut reads as "never pressed" and we'd
+            // commit on every arm expiry.
+            if (alttab._modSeen && !modShortcut.pressed) {
+                alttab.accept()
+                return
             }
+
+            alttab.armed = false
+            alttab.active = true
         }
     }
 
@@ -183,15 +207,24 @@ Item {
     }
 
     function accept() {
+        // Idempotent: only commit if we're actually up or arming. Guards
+        // against a second release event (e.g. if both a bare and a
+        // modifier-qualified bind match the same key) or the released signal
+        // racing the arm timer — without this, either could dispatch the
+        // workspace switch twice.
+        if (!alttab.active && !alttab.armed) return
+
+        armTimer.stop()
+        alttab.armed = false
+        alttab.active = false
+
         if (alttab.entries.length > 0) {
             const e = alttab.entries[alttab.index]
             if (e && e.id !== undefined) HyprData.dispatchSwitch(e.id, e.name)
         } else if (alttab._fallbackTarget) {
-            HyprData.dispatchSwitch(alttab._fallbackTarget.id, alttab._fallbackTarget.name)
+            HyprData.dispatchSwitch(alttab._fallbackTarget.id,
+                                    alttab._fallbackTarget.name)
         }
-        armTimer.stop()
-        alttab.armed = false
-        alttab.active = false
         alttab._fallbackTarget = null
     }
 
@@ -239,7 +272,7 @@ Item {
         let cmds = []
         for (let i = 0; i < lm.count; i++) {
             const w = lm.get(i)
-            if (w.address) cmds.push("dispatch closewindow address:" + w.address)
+            if (w.address) cmds.push(HyprData.batchCloseWindowArg(w.address))
         }
         if (cmds.length === 0) return
         batchProc.command = ["hyprctl", "--batch", cmds.join(";")]
@@ -253,16 +286,85 @@ Item {
     //=========================================================================
     PanelWindow {
         id: win
-        visible: alttab.active
+        // Mapped during the arm phase as well as when shown.
+        //
+        // The commit-on-Alt-release path that actually works is the
+        // Keys.onReleased handler below, which needs this surface focused.
+        // When only the visible panel was mapped, releasing Alt inside the
+        // arm window hit nothing: no focus, no key handler, and the
+        // `hyprtab:mod` global shortcut doesn't reliably deliver a release
+        // edge for a modifier key. So a quick tap-and-release opened the
+        // panel and left it sitting there.
+        //
+        // Mapping during arming closes that gap. Nothing is drawn — the
+        // backdrop and panel below are gated on `active`, so the arm window
+        // stays visually silent and the anti-flash behaviour is preserved.
+        //
+        // The surface is mapped PERMANENTLY, not just while armed/active.
+        // Creating a layer surface and then acquiring keyboard focus takes a
+        // compositor roundtrip; for a fast Alt+Tab tap the release can beat
+        // that and the commit is lost. Keeping the surface alive means arming
+        // only has to flip keyboardFocus, which is a single roundtrip instead
+        // of surface-create-then-focus.
+        //
+        // While idle it's completely inert: nothing is drawn (every child is
+        // gated on `active`), keyboard focus is None, and `mask` is an empty
+        // region so it swallows no pointer input either.
+        visible: true
         color: "transparent"
         anchors { top: true; bottom: true; left: true; right: true }
         exclusiveZone: 0
         WlrLayershell.layer: WlrLayer.Overlay
         WlrLayershell.namespace: "hyprtab"
-        WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
 
+        // Empty region == accepts no pointer input. Applied whenever we're
+        // neither armed nor showing, so the always-mapped overlay never eats
+        // clicks meant for the desktop underneath.
+        Region { id: noInputRegion }
+        mask: (alttab.active || alttab.armed) ? null : noInputRegion
+
+        // Focus from the moment we arm, so the Alt release is caught whether
+        // or not the panel has appeared yet. Compositor binds are evaluated
+        // before keys reach clients, so ALT+Tab still reaches the `next`
+        // global shortcut — cycling is unaffected.
+        WlrLayershell.keyboardFocus: (alttab.active || alttab.armed)
+                                     ? WlrKeyboardFocus.Exclusive
+                                     : WlrKeyboardFocus.None
+
+        Item {
+            anchors.fill: parent
+            focus: alttab.active || alttab.armed
+
+            // Commit on Alt release — this is the release-to-commit path that
+            // the global shortcut was supposed to provide.
+            Keys.onReleased: function(event) {
+                if (event.key === Qt.Key_Alt
+                    || event.key === Qt.Key_Meta
+                    || event.key === Qt.Key_AltGr) {
+                    event.accepted = true
+                    if (alttab.active || alttab.armed) alttab.accept()
+                }
+            }
+
+            // Escape / Enter / Delete as direct keys, so they work without
+            // needing a global shortcut round-trip.
+            Keys.onPressed: function(event) {
+                if (event.key === Qt.Key_Escape) {
+                    alttab.cancel(); event.accepted = true
+                } else if (event.key === Qt.Key_Return
+                           || event.key === Qt.Key_Enter) {
+                    alttab.accept(); event.accepted = true
+                } else if (event.key === Qt.Key_Delete) {
+                    alttab.closeHighlighted(); event.accepted = true
+                }
+            }
+        }
+
+        // Gated on `active`, not on the window being mapped: during the arm
+        // phase the surface exists (to hold focus) but must draw nothing.
         Rectangle {
             anchors.fill: parent
+            visible: alttab.active
             color: Config.backdropColor
             opacity: Config.altTabBackdropOpacity
             MouseArea { anchors.fill: parent; onClicked: alttab.cancel() }
@@ -270,6 +372,7 @@ Item {
 
         Rectangle {
             id: panel
+            visible: alttab.active
             anchors.centerIn: parent
             radius: Config.panelRadius
             color: Config.altTabPanelBg

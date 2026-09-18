@@ -156,6 +156,132 @@ QtObject {
         return out
     }
 
+    //=========================================================================
+    //  DISPATCH COMPATIBILITY  (Hyprland <0.55 hyprlang vs >=0.55 lua)
+    //=========================================================================
+    // Since Hyprland 0.55, hyprlang is deprecated in favour of lua, and
+    // `hyprctl dispatch` is a shorthand for `hyprctl eval 'hl.dispatch(...)'`.
+    // The legacy string form ("focuswindow address:0x123") is no longer
+    // parsed — it gets spliced into lua source verbatim and blows up with:
+    //     error: [string "return hl.dispatch(focuswindow address:0x...)"]:1:
+    //            ')' expected near 'address'
+    // Quickshell exposes Hyprland.usingLua so we can emit the right form for
+    // whichever version is running. Every dispatch in this project goes
+    // through the helpers below — never call Hyprland.dispatch() directly.
+    //
+    // Lua dispatcher equivalents (from the 0.55+ wiki):
+    //   focuswindow address:X        -> hl.dsp.focus({ window = "address:X" })
+    //   workspace N                  -> hl.dsp.focus({ workspace = N })
+    //   togglespecialworkspace NAME  -> hl.dsp.workspace.toggle_special("NAME")
+    //   movetoworkspacesilent N,addr -> hl.dsp.window.move({ workspace = N,
+    //                                       window = "address:X", follow = false })
+    //   closewindow address:X        -> hl.dsp.window.close({ window = "address:X" })
+    // Quickshell's Hyprland.usingLua is documented as "false until the
+    // Hyprland module is initialized", so binding it to a property at
+    // singleton-construction time latches `false` forever and we keep
+    // emitting legacy syntax. Read it FRESH on every dispatch instead —
+    // dispatches only happen on user action, long after init.
+    //
+    // Config.luaDispatch overrides detection: "auto" (default) trusts
+    // Hyprland.usingLua, "always"/"never" force one syntax. Use the override
+    // if your Quickshell predates the usingLua property.
+    function _isLua() {
+        const mode = Config.luaDispatch
+        if (mode === "always") return true
+        if (mode === "never")  return false
+        try {
+            if (Hyprland.usingLua !== undefined) return !!Hyprland.usingLua
+        } catch (e) {}
+        // Fall back to sniffing for a lua config on disk: Hyprland 0.55+
+        // reads ~/.config/hypr/hyprland.lua.
+        return data._luaConfigPresent
+    }
+
+    // One-shot probe for ~/.config/hypr/hyprland.lua, used only when
+    // Hyprland.usingLua is unavailable.
+    property bool _luaConfigPresent: false
+    property Process _luaProbe: Process {
+        command: ["sh", "-c",
+                  "test -f \"${XDG_CONFIG_HOME:-$HOME/.config}/hypr/hyprland.lua\" && echo yes || echo no"]
+        stdout: StdioCollector {
+            id: luaProbeOut
+            onStreamFinished: data._luaConfigPresent =
+                (luaProbeOut.text.indexOf("yes") >= 0)
+        }
+    }
+
+    // Quote a lua string literal. Addresses and workspace names are tame
+    // (hex digits / identifier-ish), but escape anyway so a workspace named
+    // with a quote can't break out of the expression.
+    function _luaStr(s) {
+        return '"' + String(s).replace(/\\/g, "\\\\").replace(/"/g, '\\"') + '"'
+    }
+
+    // A lua workspace value: numeric ids go through bare, names get quoted.
+    function _luaWs(ws) {
+        const n = parseInt(ws)
+        if (!isNaN(n) && String(n) === String(ws)) return String(n)
+        return data._luaStr(ws)
+    }
+
+    function dispatchFocusWindow(addr) {
+        if (data._isLua())
+            Hyprland.dispatch("hl.dsp.focus({ window = "
+                              + data._luaStr("address:" + addr) + " })")
+        else
+            Hyprland.dispatch("focuswindow address:" + addr)
+    }
+
+    function dispatchCloseWindow(addr) {
+        if (data._isLua())
+            Hyprland.dispatch("hl.dsp.window.close({ window = "
+                              + data._luaStr("address:" + addr) + " })")
+        else
+            Hyprland.dispatch("closewindow address:" + addr)
+    }
+
+    function dispatchWorkspace(ws) {
+        if (data._isLua())
+            Hyprland.dispatch("hl.dsp.focus({ workspace = "
+                              + data._luaWs(ws) + " })")
+        else
+            Hyprland.dispatch("workspace " + ws)
+    }
+
+    // name == "" toggles the last-used special workspace.
+    function dispatchToggleSpecial(name) {
+        if (data._isLua()) {
+            Hyprland.dispatch(name && name.length > 0
+                ? ("hl.dsp.workspace.toggle_special(" + data._luaStr(name) + ")")
+                : "hl.dsp.workspace.toggle_special()")
+        } else {
+            Hyprland.dispatch(name && name.length > 0
+                ? ("togglespecialworkspace " + name)
+                : "togglespecialworkspace")
+        }
+    }
+
+    // Move a window to a workspace without following it (movetoworkspacesilent).
+    // `ws` is either a numeric id or a name like "special:stash".
+    function dispatchMoveWindowSilent(addr, ws) {
+        if (data._isLua())
+            Hyprland.dispatch("hl.dsp.window.move({ workspace = "
+                              + data._luaWs(ws) + ", window = "
+                              + data._luaStr("address:" + addr)
+                              + ", follow = false })")
+        else
+            Hyprland.dispatch("movetoworkspacesilent " + ws + ",address:" + addr)
+    }
+
+    // A single `hyprctl --batch` argument that closes one window. Used by
+    // AltTab's close-all. Returns the payload WITHOUT the leading "dispatch ".
+    function batchCloseWindowArg(addr) {
+        return data._isLua()
+            ? ("dispatch hl.dsp.window.close({ window = "
+               + data._luaStr("address:" + addr) + " })")
+            : ("dispatch closewindow address:" + addr)
+    }
+
     // Switch to a workspace, correctly dismissing any overlaid special first.
     function dispatchSwitch(id, name) {
         const fmId = data.focusedMonitorId
@@ -163,8 +289,7 @@ QtObject {
 
         if (data.isSpecial(id, name)) {
             const sub = data.specialName(name)
-            Hyprland.dispatch(sub.length > 0 ? ("togglespecialworkspace " + sub)
-                                             : "togglespecialworkspace")
+            data.dispatchToggleSpecial(sub)
             const prev = ms[fmId] || ""
             let nms = Object.assign({}, ms)
             nms[fmId] = (prev === sub) ? "" : sub
@@ -179,12 +304,12 @@ QtObject {
         const cachedSpecial = ms[fmId] || ""
         const visibleSpecial = liveSpecial.length > 0 ? liveSpecial : cachedSpecial
         if (visibleSpecial && visibleSpecial.length > 0) {
-            Hyprland.dispatch("togglespecialworkspace " + visibleSpecial)
+            data.dispatchToggleSpecial(visibleSpecial)
             let nms = Object.assign({}, ms)
             nms[fmId] = ""
             data.monitorSpecial = nms
         }
-        Hyprland.dispatch("workspace " + id)
+        data.dispatchWorkspace(id)
     }
 
     function createNewSpecial() {
@@ -197,7 +322,7 @@ QtObject {
         let candidate = base
         let i = 2
         while (taken[candidate]) candidate = base + "-" + (i++)
-        Hyprland.dispatch("togglespecialworkspace " + candidate)
+        data.dispatchToggleSpecial(candidate)
         let nms = Object.assign({}, data.monitorSpecial)
         nms[data.focusedMonitorId] = candidate
         data.monitorSpecial = nms
@@ -213,7 +338,10 @@ QtObject {
     property Component _wsModelComponent: Component { ListModel {} }
 
     //--- BOOTSTRAP: single hyprctl pull at startup ---
-    Component.onCompleted: data._bootstrap()
+    Component.onCompleted: {
+        data._luaProbe.running = true
+        data._bootstrap()
+    }
 
     function _bootstrap() {
         try { if (Hyprland.refreshToplevels)  Hyprland.refreshToplevels()  } catch (e) {}
@@ -246,9 +374,31 @@ QtObject {
         const tls = Hyprland.toplevels ? Hyprland.toplevels.values : []
         let m = {}
         for (const t of tls) {
+            // A toplevel mid-teardown can still be in the collection with a
+            // null/!valid wayland handle. Publishing one of those would let a
+            // ScreencopyView bind a dead object, so skip anything that isn't
+            // fully live.
+            if (!t) continue
             const obj = t.lastIpcObject
             const addr = obj ? obj.address : null
-            if (addr && t.wayland) m[addr] = t.wayland
+            const wl = t.wayland
+            if (!addr || !wl) continue
+            m[addr] = wl
+        }
+        data.handleByAddr = m
+    }
+
+    // Synchronously remove one address's handle. Used on closewindow so the
+    // preview Loader deactivates before the toplevel's wayland object dies.
+    // Reassigns the map (new object reference) so dependent bindings — the
+    // Loader's `active` and the ScreencopyView's `captureSource` — re-evaluate
+    // immediately rather than on the next map rebuild.
+    function _dropHandle(addr) {
+        if (!addr) return
+        if (data.handleByAddr[addr] === undefined) return
+        let m = {}
+        for (const k in data.handleByAddr) {
+            if (k !== addr) m[k] = data.handleByAddr[k]
         }
         data.handleByAddr = m
     }
@@ -424,8 +574,24 @@ QtObject {
         }
         if (name === "closewindow") {
             const addr = data._normAddr(payload.trim())
+            // ORDER MATTERS. Drop the wayland handle FIRST, synchronously.
+            //
+            // The Loader that owns each ScreencopyView is gated on
+            // `!!HyprData.handleByAddr[address]`, so purging the address here
+            // flips that binding false on this very tick and the
+            // ScreencopyView is torn down while its capture target is still
+            // a live wayland object.
+            //
+            // Removing the ListModel row first is NOT enough: the Repeater
+            // destroys delegates asynchronously, so the ScreencopyView can
+            // outlive the toplevel by a frame and issue a screencopy request
+            // against a destroyed object. The compositor answers that by
+            // killing the connection:
+            //     The Wayland connection experienced a fatal error:
+            //     Invalid argument
+            // which takes the whole shell down.
+            data._dropHandle(addr)
             data._removeWindowByAddr(addr)
-            data._rebuildHandleMap()
             data.windowClosed(addr)
             return
         }

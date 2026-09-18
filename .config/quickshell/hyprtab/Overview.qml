@@ -137,6 +137,20 @@ Item {
                 Qt.callLater(overview._refreshIndicators)
             }
         }
+        // If the window currently being dragged gets closed (by us, or by the
+        // app itself, or by a crash), drop the drag immediately. The ghost
+        // holds a wayland handle in overview.dragWl; leaving it bound after
+        // the toplevel dies makes the ghost's ScreencopyView issue requests
+        // against a destroyed object, which is a fatal protocol error.
+        function onWindowClosed(address) {
+            if (overview.dragActive && overview.dragAddress === address) {
+                overview.dragActive = false
+                overview.dragAddress = ""
+                overview.dragWl = null
+                overview.dropTargetKey = ""
+            }
+            overview._hideTooltip()
+        }
     }
 
     Component.onCompleted: overview._rebuildWorkspaces()
@@ -338,7 +352,7 @@ Item {
     // splice the row out of the workspace's ListModel and the matching
     // delegate will be destroyed. No timer, no reconcile, no race.
     function _closeWindow(wsId, addr) {
-        Hyprland.dispatch("closewindow address:" + addr)
+        HyprData.dispatchCloseWindow(addr)
     }
 
     //=========================================================================
@@ -410,7 +424,7 @@ Item {
             let candidate = base
             let i = 2
             while (taken[candidate]) candidate = base + "-" + (i++)
-            Hyprland.dispatch("movetoworkspacesilent special:" + candidate + ",address:" + addr)
+            HyprData.dispatchMoveWindowSilent(addr, "special:" + candidate)
             return
         }
         const parts = key.split(":")
@@ -418,12 +432,12 @@ Item {
             const idx = parseInt(parts[1])
             const e = overview.normalEntries[idx]
             if (!e) return
-            Hyprland.dispatch("movetoworkspacesilent " + e.id + ",address:" + addr)
+            HyprData.dispatchMoveWindowSilent(addr, e.id)
         } else if (parts[0] === "s") {
             const idx = parseInt(parts[1])
             const e = overview.specialEntries[idx]
             if (!e) return
-            Hyprland.dispatch("movetoworkspacesilent " + e.fullName + ",address:" + addr)
+            HyprData.dispatchMoveWindowSilent(addr, e.fullName)
         }
     }
 
@@ -612,7 +626,7 @@ Item {
                                     overview.close()
                                 }
                                 onWindowClicked: function(addr) {
-                                    Hyprland.dispatch("focuswindow address:" + addr)
+                                    HyprData.dispatchFocusWindow(addr)
                                     overview.close()
                                 }
                                 onWindowMiddleClicked: function(addr) {
@@ -729,7 +743,7 @@ Item {
                                     overview.close()
                                 }
                                 onWindowClicked: function(addr) {
-                                    Hyprland.dispatch("focuswindow address:" + addr)
+                                    HyprData.dispatchFocusWindow(addr)
                                     overview.close()
                                 }
                                 onWindowMiddleClicked: function(addr) {
