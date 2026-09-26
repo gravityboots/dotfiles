@@ -5,6 +5,7 @@ echo "==> Restoring system configs (requires sudo)"
 
 sudo cp ~/systemconfigs/etc/pacman.d/hooks/*.hook /etc/pacman.d/hooks/
 sudo cp ~/systemconfigs/boot/efi/EFI/refind/refind.conf /boot/efi/EFI/refind/
+sudo cp ~/systemconfigs/esp-sync /usr/local/bin/ && sudo chmod +x /usr/local/bin/esp-sync
 
 if [ -d ~/systemconfigs/boot/efi/EFI/refind/rEFInd-minimal ]; then
     sudo cp -r ~/systemconfigs/boot/efi/EFI/refind/rEFInd-minimal /boot/efi/EFI/refind/
