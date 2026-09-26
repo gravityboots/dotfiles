@@ -11,5 +11,4 @@ Target = boot/*-ucode.img
 [Action]
 Description = Copying kernel and initramfs to ESP for rEFInd...
 When = PostTransaction
-Exec = /usr/bin/sh -c "mountpoint -q /boot/efi || { echo 'ESP NOT MOUNTED - kernel NOT copied' >&2; exit 1; }; for f in vmlinuz-linux-cachyos initramfs-linux-cachyos.img vmlinuz-linux-cachyos-lts initramfs-linux-cachyos-lts.img amd-ucode.img; do [ -f /boot/$f ] && cp /boot/$f /boot/efi/EFI/cachyos/; done"
-
+Exec = /usr/local/bin/esp-sync

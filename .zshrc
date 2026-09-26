@@ -1,3 +1,8 @@
+# IMPORTANT: copy kernel mountpoint to ESP
+if mountpoint -q /boot/efi 2>/dev/null && ! cmp -s /boot/vmlinuz-linux-cachyos /boot/efi/EFI/cachyos/vmlinuz-linux-cachyos 2>/dev/null; then
+    echo "⚠  ESP kernel is out of date — copy it before rebooting"
+fi
+
 # Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
 # Initialization code that may require console input (password prompts, [y/n]
 # confirmations, etc.) must go above this block; everything else may go below.
@@ -20,11 +25,6 @@ source /usr/share/cachyos-zsh-config/cachyos-config.zsh
 #if [[ -o interactive ]]; then
 #    fastfetch
 #fi
-
-# IMPORTANT: warns if kernel is updated after pacman -Syu, and needs to be copied to the separate mountpoint at /boot/efi
-if mountpoint -q /boot/efi 2>/dev/null && ! cmp -s /boot/vmlinuz-linux-cachyos /boot/efi/EFI/cachyos/vmlinuz-linux-cachyos 2>/dev/null; then
-    echo "⚠  ESP kernel is out of date — copy it before rebooting"
-fi
 
 unsetopt correct
 unsetopt correct_all
