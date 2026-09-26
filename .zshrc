@@ -1,7 +1,9 @@
-# IMPORTANT: copy kernel mountpoint to ESP
-if mountpoint -q /boot/efi 2>/dev/null && ! cmp -s /boot/vmlinuz-linux-cachyos /boot/efi/EFI/cachyos/vmlinuz-linux-cachyos 2>/dev/null; then
-    echo "⚠  ESP kernel is out of date — copy it before rebooting"
+# IMPORTANT: Warn for kernel version mismatch
+_esp_ver=$(cat /var/lib/esp-kernel.version 2>/dev/null)
+if [[ -z "$_esp_ver" || ! -d /usr/lib/modules/$_esp_ver ]]; then
+    echo "⚠  ESP kernel (${_esp_ver:-unknown}) has no modules — run: sudo esp-sync before rebooting"
 fi
+unset _esp_ver
 
 # Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
 # Initialization code that may require console input (password prompts, [y/n]

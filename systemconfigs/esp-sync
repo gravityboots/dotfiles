@@ -3,4 +3,4 @@ mountpoint -q /boot/efi || { echo "ESP NOT MOUNTED - kernel NOT copied" >&2; exi
 for f in vmlinuz-linux-cachyos initramfs-linux-cachyos.img vmlinuz-linux-cachyos-lts initramfs-linux-cachyos-lts.img amd-ucode.img; do
     if [ -f "/boot/$f" ]; then cp "/boot/$f" /boot/efi/EFI/cachyos/ || exit 1; fi
 done
-stat -c %Y /boot/vmlinuz-linux-cachyos > /var/lib/esp-kernel.stamp
+pacman -Q linux-cachyos | awk '{print $2 "-cachyos"}' > /var/lib/esp-kernel.version
