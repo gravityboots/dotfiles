@@ -21,6 +21,11 @@ source /usr/share/cachyos-zsh-config/cachyos-config.zsh
 #    fastfetch
 #fi
 
+# IMPORTANT: warns if kernel is updated after pacman -Syu, and needs to be copied to the separate mountpoint at /boot/efi
+if mountpoint -q /boot/efi 2>/dev/null && ! cmp -s /boot/vmlinuz-linux-cachyos /boot/efi/EFI/cachyos/vmlinuz-linux-cachyos 2>/dev/null; then
+    echo "⚠  ESP kernel is out of date — copy it before rebooting"
+fi
+
 unsetopt correct
 unsetopt correct_all
 
