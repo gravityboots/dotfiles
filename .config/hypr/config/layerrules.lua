@@ -5,15 +5,16 @@
 
 -- Noctalia
 -- Matching noctalia-.*$ works but causes some border aliasing issues.
-hl.layer_rule({ name = "noctalia", match = { namespace = "noctalia-background-.*$" }, ignore_alpha = 0, blur = true, blur_popups = true })
-hl.layer_rule({ match = { namespace = "noctalia-shell:regionSelector" }, no_anim = true })
-
--- Noctalia v5 namespaces (uncomment once on v5; replaces the two lines above)
--- hl.layer_rule({ name = "noctalia", match = { namespace = "^noctalia-(bar-.+|notification|dock|panel|attached-panel|osd|window-switcher)$" }, no_anim = true, ignore_alpha = 0.5, blur = true, blur_popups = true })
+-- hl.layer_rule({ name = "noctalia", match = { namespace = "noctalia-background-.*$" }, ignore_alpha = 0, blur = true, blur_popups = true })
+-- hl.layer_rule({ match = { namespace = "noctalia-shell:regionSelector" }, no_anim = true })
+hl.layer_rule({ name = "noctalia", match = { namespace = "^noctalia-(bar-.+|notification|dock|panel|attached-panel|osd|window-switcher)$" }, no_anim = true, ignore_alpha = 0.5, blur = true, blur_popups = true })
 
 -- Quickshell
 hl.layer_rule({ match = { namespace = "quickshell" },          blur = true, ignore_alpha = 0 })
 hl.layer_rule({ match = { namespace = "quickshell:overview" }, blur = true, ignore_alpha = 0 })
+
+-- snappy-switcher
+hl.layer_rule({ match = { namespace = "snappy-switcher" }, blur = true, ignore_alpha = 0})
 
 -- hyprtab
 hl.layer_rule({ match = { namespace = "hyprtab" },          blur = true, ignore_alpha = 0 })

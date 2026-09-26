@@ -155,5 +155,9 @@
     "terminal.integrated.initialHint": false,
     "editor.indentSize": "tabSize",
     "vscode-pets.theme": "forest",
-    "git.confirmSync": false
+    "git.confirmSync": false,
+    "editor.smoothScrolling": true,
+    "editor.cursorSmoothCaretAnimation": "on",
+    "editor.cursorBlinking": "smooth",
+    "git.enableSmartCommit": true
 }

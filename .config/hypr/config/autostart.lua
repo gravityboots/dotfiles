@@ -6,7 +6,8 @@
 hl.on("hyprland.start", function()
     -- Shell
     hl.exec_cmd("noctalia")
-    hl.exec_cmd("qs -c hyprtab")
+    hl.exec_cmd("snappy-switcher --daemon")
+    -- hl.exec_cmd("qs -c hyprtab")
 
     -- Keyring / polkit
     hl.exec_cmd("gnome-keyring-daemon --start --components=secrets")

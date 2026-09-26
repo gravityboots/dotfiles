@@ -5,6 +5,7 @@
 ---@module 'hl'
 
 package.path = os.getenv("HOME") .. "/.config/hypr/config/?.lua;" .. package.path
+hl.permission("/usr/(bin|local/bin)/hyprpm", "plugin", "allow") -- allow hyprpm
 
 require("variables")      -- mainMod, ipc, paths (must be first)
 require("monitors")

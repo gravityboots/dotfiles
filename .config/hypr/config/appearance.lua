@@ -5,19 +5,17 @@
 
 hl.config({
     general = {
+        layout      = "dwindle",
         gaps_in     = 4,
         gaps_out    = 8,
-        border_size = 1,
-        layout      = "dwindle",
-        col = {
-            active_border   = "rgb(414868)",  -- alts: rgb(c0caf5), rgb(585b70)
-            inactive_border = "rgb(414868)",  -- alts: rgb(2a2b36)
-        },
+        border_size = 0,
+        ["col.active_border"]   = "rgba(0a0b0fd9)", -- alts: rgb(414868), rgb(c0caf5), rgb(585b70)
+        ["col.inactive_border"] = "rgba(0a0b0fd9)", -- alts: rgb(414868), rgb(2a2b36)
     },
 
-    decoration = {
-        rounding        = 16,
-        rounding_power  = 8.0,   -- 2 = regular circle, higher = more squircle-ish
+    decoration = { -- keep border radius 21 & rounding power 3 for no aliasing on 1920x1080, with border_size=0
+        rounding        = 21,
+        rounding_power  = 3.0,   -- 2 = regular circle, higher = more squircle-ish
         active_opacity   = 1,
         inactive_opacity = 1,
         dim_inactive     = true,
