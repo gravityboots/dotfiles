@@ -22,4 +22,7 @@ hl.on("hyprland.start", function()
     hl.exec_cmd("mpd-mpris")
     hl.exec_cmd("fcitx5 -d")
     -- hl.exec_cmd("victus-control")
+
+    -- Loop until IPC is ready, then reload hyprpm
+    hl.exec_cmd("sh -c 'for i in $(seq 1 20); do hyprctl -j monitors >/dev/null 2>&1 && break; sleep 0.25; done; hyprpm reload -n'")
 end)
