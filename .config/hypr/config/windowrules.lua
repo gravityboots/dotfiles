@@ -6,7 +6,10 @@
 -- Global
 hl.window_rule({ match = { float = true },          center = true })
 hl.window_rule({ match = { class = "^(fcitx)$" },   float  = true })
-hl.window_rule({ match = { class = "kitty" },       min_size = { 100, 100 } })
+hl.window_rule({ match = { class = "kitty" },       min_size = "100 100" })
+
+-- Scrolling
+hl.window_rule({ match = { class = "zen" }, scrolling_width = 1.0})
 
 -- Float + center + size (+ opacity)
 hl.window_rule({ match = { class = "dev.noctalia.Noctalia" },                   float = true, center = true, size = { 1200, 900 } })

@@ -26,19 +26,10 @@ hl.bind(mainMod .. " + W",       hl.dsp.exec_cmd(ipc .. " panel-toggle wallpaper
 hl.bind(mainMod .. " + SLASH",   hl.dsp.exec_cmd(ipc .. " panel-toggle kenn/keybind-cheatsheet:cheatsheet"))
 hl.bind("XF86Launch2",           hl.dsp.exec_cmd(ipc .. " panel-toggle control-center system"))
 
--- snappy-switcher
+-- snappy-switcher & hyprexpo
 hl.bind("ALT + Tab", hl.dsp.exec_cmd("snappy-switcher next --mod alt"), { description = "Snappy Switcher" })
--- hl.bind("SUPER + TAB", hl.dsp.exec_cmd("snappy-switcher next --workspace --mod super"))
-
--- hyprtab
--- hl.bind(mainMod .. " + TAB",    hl.dsp.exec_cmd("qs ipc -c hyprtab call overview toggle"))
--- hl.bind("ALT + Alt_L",          hl.dsp.global("hyprtab:mod"))
--- hl.bind("ALT + Alt_R",          hl.dsp.global("hyprtab:mod"))
--- hl.bind("ALT + Tab",            hl.dsp.global("hyprtab:next"))
--- hl.bind("ALT + SHIFT + Tab",    hl.dsp.global("hyprtab:prev"))
--- hl.bind("ALT + Delete",         hl.dsp.global("hyprtab:closeAll"))
--- hl.bind("ALT + Escape",         hl.dsp.global("hyprtab:cancel"))
--- hl.bind(mainMod .. " + SHIFT + TAB", hl.dsp.exec_cmd("qs ipc -c overview call overview toggle"))
+hl.bind("SUPER + TAB", function() hl.plugin.scrolloverview.overview("toggle all") end)
+-- hl.bind("SUPER + TAB", function() hl.plugin.hyprexpo.expo("toggle") end)
 
 -- Utility
 hl.bind("PRINT",                                hl.dsp.exec_cmd("hyprshot -m region -z --no-cursor"))
@@ -70,6 +61,8 @@ hl.bind("XF86AudioPrev",            hl.dsp.exec_cmd(ipc .. " media previous"), {
 hl.bind(mainMod .. " + Q",              hl.dsp.window.close())
 hl.bind(mainMod .. " + SHIFT + space",  hl.dsp.window.float())
 hl.bind(mainMod .. " + F",              hl.dsp.window.fullscreen())
+
+-- Dwindle layout management
 hl.bind(mainMod .. " + Left",           hl.dsp.focus({ direction = "left"  }))
 hl.bind(mainMod .. " + Down",           hl.dsp.focus({ direction = "down"  }))
 hl.bind(mainMod .. " + Up",             hl.dsp.focus({ direction = "up"    }))
@@ -82,8 +75,17 @@ hl.bind(mainMod .. " + CTRL + Left",    hl.dsp.window.resize({ x = -20, y =   0,
 hl.bind(mainMod .. " + CTRL + Right",   hl.dsp.window.resize({ x =  20, y =   0, relative = true }), { repeating = true })
 hl.bind(mainMod .. " + CTRL + Up",      hl.dsp.window.resize({ x =   0, y = -20, relative = true }), { repeating = true })
 hl.bind(mainMod .. " + CTRL + Down",    hl.dsp.window.resize({ x =   0, y =  20, relative = true }), { repeating = true })
--- hl.bind(mainMod .. " + P", hl.dsp.window.pseudo())
--- hl.bind(mainMod .. " + J", hl.dsp.window.toggle_split())
+
+-- Scrolling layout management
+hl.bind(mainMod .. " + BracketLeft",            hl.dsp.layout("move -col"))
+hl.bind(mainMod .. " + BracketRight",           hl.dsp.layout("move +col"))
+hl.bind(mainMod .. " + SHIFT + BracketLeft",    hl.dsp.layout("swapcol l"))
+hl.bind(mainMod .. " + SHIFT + BracketRight",   hl.dsp.layout("swapcol r"))
+hl.bind(mainMod .. " + CTRL + BracketLeft",     hl.dsp.layout("colresize -conf"))
+hl.bind(mainMod .. " + CTRL + BracketRight",    hl.dsp.layout("colresize +conf"))
+hl.bind(mainMod .. " + SHIFT + F",              hl.dsp.layout("fit expand"))
+-- hl.bind(mainMod .. " + Minus",                  hl.dsp.layout("consume_or_expel prev"))
+-- hl.bind(mainMod .. " + Plus",                   hl.dsp.layout("consume_or_expel next"))
 
 -- Switch workspaces: mainMod + [0-9]
 for i = 1, 9 do

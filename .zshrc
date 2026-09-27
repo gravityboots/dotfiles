@@ -1,7 +1,7 @@
 # IMPORTANT: Warn for kernel version mismatch
 _esp_ver=$(cat /var/lib/esp-kernel.version 2>/dev/null)
 if [[ -z "$_esp_ver" || ! -d /usr/lib/modules/$_esp_ver ]]; then
-    echo "⚠  ESP kernel (${_esp_ver:-unknown}) has no modules — run: sudo esp-sync before rebooting"
+    echo "⚠ [Kernel Mismatch!] ESP kernel (${_esp_ver:-unknown}) has no modules; run sudo esp-sync before rebooting"
 fi
 unset _esp_ver
 

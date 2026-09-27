@@ -5,14 +5,14 @@
 ---@module 'hl'
 
 package.path = os.getenv("HOME") .. "/.config/hypr/config/?.lua;" .. package.path
-hl.permission("/usr/(bin|local/bin)/hyprpm", "plugin", "allow") -- allow hyprpm
-
 require("variables")      -- mainMod, ipc, paths (must be first)
 require("monitors")
 require("environment")
 require("appearance")     -- general, decoration, animations
-require("input")          -- input, dwindle, misc, cursor
+require("layout")         -- scrolling, dwindle, etc.
+require("input")          -- input, misc, cursor
 require("binds")
+require("plugins")
 require("windowrules")
 require("layerrules")
 require("autostart")      -- last: start things after config is applied

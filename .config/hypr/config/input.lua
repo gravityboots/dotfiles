@@ -1,5 +1,5 @@
 -- input.lua
--- input, dwindle, misc, cursor
+-- input, misc, cursor
 
 ---@module 'hl'
 
@@ -14,11 +14,6 @@ hl.config({
             tap_to_click   = true,
             scroll_factor  = 0.75,
         },
-    },
-
-    dwindle = {
-        -- pseudotile     = true,
-        preserve_split = true,
     },
 
     misc = {
