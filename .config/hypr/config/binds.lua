@@ -84,8 +84,8 @@ hl.bind(mainMod .. " + SHIFT + BracketRight",   hl.dsp.layout("swapcol r"))
 hl.bind(mainMod .. " + CTRL + BracketLeft",     hl.dsp.layout("colresize -conf"))
 hl.bind(mainMod .. " + CTRL + BracketRight",    hl.dsp.layout("colresize +conf"))
 hl.bind(mainMod .. " + SHIFT + F",              hl.dsp.layout("fit expand"))
--- hl.bind(mainMod .. " + Minus",                  hl.dsp.layout("consume_or_expel prev"))
--- hl.bind(mainMod .. " + Plus",                   hl.dsp.layout("consume_or_expel next"))
+hl.bind(mainMod .. " + Minus",                  hl.dsp.layout("consume_or_expel prev"))
+hl.bind(mainMod .. " + Plus",                   hl.dsp.layout("consume_or_expel next"))
 
 -- Switch workspaces: mainMod + [0-9]
 for i = 1, 9 do
