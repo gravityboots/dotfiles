@@ -35,8 +35,7 @@ order = [ "default" ]
     end = [
         "privacy",
         "tray",
-        "widget",
-        "ocr",
+        "group:g2",
         "network",
         "bluetooth",
         "volume",
@@ -83,11 +82,22 @@ order = [ "default" ]
         radius = 12.0
         widget_spacing = 8
 
+        [[bar.default.capsule_group]]
+        accordion = true
+        accordion_direction = "start"
+        enabled = true
+        fill = "surface_variant"
+        id = "g2"
+        members = [ "widget_3", "tracker", "widget_2", "printer", "w-engine-widget", "wallhaven", "mpvpaper", "widget" ]
+        opacity = 0.0
+        padding = 0.0
+        widget_spacing = 8
+
 [battery]
 warning_threshold = 10
 
     [battery.device."/org/freedesktop/UPower/devices/battery_hidpp_battery_0"]
-    warning_threshold = 10
+    warning_threshold = 0
 
 [brightness]
 enable_ddcutil = false
@@ -132,13 +142,13 @@ width = 720
     type = "notification"
 
     [[control_center.shortcuts]]
-    type = "nightlight"
-
-    [[control_center.shortcuts]]
     type = "caffeine"
 
     [[control_center.shortcuts]]
-    type = "weather"
+    type = "dark_mode"
+
+    [[control_center.shortcuts]]
+    type = "andrewdems/printers:toggle"
 
     [[control_center.shortcuts]]
     type = "wallpaper"
@@ -295,17 +305,45 @@ wallpaper = ""
 enabled = true
 schema_version = 2
 widget_order = [
+    "lockscreen-login-box@HDMI-A-1",
     "lockscreen-login-box@eDP-1",
     "lockscreen-widget-0000000000000001",
     "lockscreen-widget-0000000000000002",
-    "lockscreen-widget-0000000000000003",
-    "lockscreen-widget-0000000000000004"
+    "lockscreen-widget-0000000000000003"
 ]
 
     [lockscreen_widgets.grid]
     cell_size = 16
     major_interval = 4
     visible = true
+
+    [lockscreen_widgets.widget."lockscreen-login-box@HDMI-A-1"]
+    box_height = 196.0
+    box_width = 810.0
+    cx = 512.0
+    cy = 586.0
+    enabled = true
+    output = "HDMI-A-1"
+    placement_height = 768.0
+    placement_width = 1024.0
+    rotation = 0.0
+    type = "login_box"
+
+        [lockscreen_widgets.widget."lockscreen-login-box@HDMI-A-1".settings]
+        background_color = "surface_variant"
+        background_opacity = 0.88
+        background_radius = 12.0
+        center_password_text = false
+        input_opacity = 1.0
+        input_radius = 6.0
+        layout = "regular"
+        show_caps_lock = true
+        show_keyboard_layout = true
+        show_login_button = true
+        show_media = true
+        show_session_buttons = true
+        show_unlock_hint = true
+        show_weather = true
 
     [lockscreen_widgets.widget."lockscreen-login-box@eDP-1"]
     box_height = 128.0
@@ -349,13 +387,14 @@ widget_order = [
 
         [lockscreen_widgets.widget.lockscreen-widget-0000000000000001.settings]
         background = true
-        background_color = "surface"
+        background_color = "surface_variant"
         background_opacity = 0.75
         background_padding = 16
         background_radius = 24
         center_text = true
-        font_family = "GeistMono Nerd Font Mono"
-        format = "{:%H:%M:%S}"
+        color = "on_surface"
+        font_family = "文泉驿正黑"
+        format = "{:%H:%M}"
         shadow = false
 
     [lockscreen_widgets.widget.lockscreen-widget-0000000000000002]
@@ -394,23 +433,6 @@ widget_order = [
         image_path = "/home/gravityboots/Pictures/Profile Pictures/nanashiround.png"
         opacity = 1.0
 
-    [lockscreen_widgets.widget.lockscreen-widget-0000000000000004]
-    box_height = 0.0
-    box_width = 0.0
-    cx = 960.0
-    cy = 540.0
-    enabled = true
-    output = "eDP-1"
-    placement_height = 1080.0
-    placement_width = 1920.0
-    rotation = 0.0
-    type = "fancy_audio_visualizer"
-
-        [lockscreen_widgets.widget.lockscreen-widget-0000000000000004.settings]
-        background = false
-        primary_color = "primary"
-        visualization_mode = "bars_rings"
-
 [nightlight]
 enabled = false
 force = false
@@ -435,7 +457,7 @@ show_actions = true
 show_app_name = true
 
 [osd]
-background_opacity = 0.79999995231628418
+background_opacity = 0.69999998807907104
 border = false
 enabled = true
 monitors = []
@@ -463,6 +485,17 @@ scale = 0.89999997615814209
     volume_output = true
     wifi = true
 
+[plugin_settings."alexander/screen-toolkit"]
+hide-cursor = false
+panel-legacy_position = "auto"
+panel_open_near_click = true
+panel_placement = "attached"
+record-audio-out = true
+record-codec = "av1"
+result_layer = "overlay"
+selected-ocr-lang = "eng+deu+jpn"
+video-path = "/home/gravityboots/Videos/Screen Recordings"
+
 [plugin_settings."ashur-d/wallpaper-widget"]
 hub_layer = "overlay"
 notify_on_change = false
@@ -471,18 +504,24 @@ wallpaper_dir = "/home/gravityboots/Pictures/Wallpapers/Disabled"
 [plugin_settings."fel/ocr"]
 languages = "eng+deu+jpn"
 
+[plugin_settings."noctalia/mpvpaper"]
+run_as_systemd = true
+video_directory = "/home/gravityboots/Pictures/Wallpapers"
+
+[plugin_settings."noctalia/wallhaven"]
+api_key = "xYy95K4Ha5rA5pa1YJU0iyTRR8ukRT5C"
+
 [plugin_settings."profidev/hypr-screen-mirror"]
 panel_open_near_click = true
 panel_placement = "attached"
 
 [plugin_settings."tadomika_ari/w-engine"]
 sync_colors = false
+w-engine-panel_placement = "attached"
 
 [plugins]
 auto_update = "all"
 enabled = [
-    "tadomika_ari/w-engine",
-    "ashur-d/wallpaper-widget",
     "noctalia/mpvpaper",
     "noctalia/wallhaven",
     "noctalia/screen_recorder",
@@ -490,14 +529,23 @@ enabled = [
     "samuelskovbakke/calculator-plus",
     "noctalia/bitwarden",
     "profidev/hypr-screen-mirror",
-    "fel/ocr",
     "noctalia/translator",
     "radimous/prismlauncher-instances",
     "andrewdems/printers",
     "thepunkoff/pomodoro",
     "kenn/keybind-cheatsheet",
     "alexander/game-launcher",
-    "cleboost/anilist"
+    "cleboost/anilist",
+    "alexander/screen-toolkit",
+    "fel/agent-glow",
+    "yocraft/custom-shortcut",
+    "whyoolw/dropwall",
+    "gustav0ar/drive-health",
+    "liamwh/emoji-picker",
+    "noctalia/kaomoji",
+    "avivbintangaringga/nextboot-selector",
+    "riversyx/noctaproton-vpn",
+    "tordex/processes"
 ]
 
     [[plugins.source]]
@@ -727,7 +775,7 @@ swap_pct_activity_threshold = 20.0
 swap_pct_critical_threshold = 80.0
 
 [theme]
-builtin = "Tokyo-Night"
+builtin = "Ayu"
 community_palette = "GitHub Dark"
 custom_palette = ""
 mode = "dark"
@@ -742,9 +790,17 @@ wallpaper_scheme = "m3-tonal-spot"
     enable_builtin_templates = true
     enable_community_templates = true
 
-    [theme.templates.user.hyprtab]
-    input_path  = "$XDG_CONFIG_HOME/noctalia/templates/hyprtab-colors.json"
-    output_path = "$XDG_CONFIG_HOME/noctalia/hyprtab-colors.json"
+        [theme.templates.user.hyprtab]
+        compare_to = ""
+        enabled = true
+        hook_async = true
+        index = 0
+        input_path = "$XDG_CONFIG_HOME/noctalia/templates/hyprtab-colors.json"
+        output_path = [ "$XDG_CONFIG_HOME/noctalia/hyprtab-colors.json" ]
+        output_path_dynamic = ""
+        post_action = ""
+        post_hook = ""
+        pre_hook = ""
 
 [wallpaper]
 directory = "/home/gravityboots/Pictures/Wallpapers"
@@ -835,6 +891,10 @@ min_length = 80.0
 title_scroll = "none"
 type = "media"
 
+[widget.mpvpaper]
+glyph = "photo-video"
+type = "noctalia/mpvpaper:mpvpaper"
+
 [widget.network]
 show_label = false
 type = "network"
@@ -853,6 +913,9 @@ type = "fel/ocr:ocr"
 [widget.output_volume]
 device = "output"
 type = "volume"
+
+[widget.printer]
+type = "andrewdems/printers:printer"
 
 [widget.privacy]
 hide_inactive = true
@@ -880,9 +943,13 @@ show_value = false
 stat = "cpu_temp"
 type = "sysmon"
 
+[widget.tracker]
+type = "cleboost/anilist:tracker"
+
 [widget.tray]
 drawer = true
-drawer_item_size = 14.0
+drawer_columns = 5
+drawer_item_size = 16.0
 match_adjacent_spacing = true
 type = "tray"
 
@@ -890,8 +957,20 @@ type = "tray"
 show_label = false
 type = "volume"
 
+[widget.w-engine-widget]
+type = "tadomika_ari/w-engine:w-engine-widget"
+
+[widget.wallhaven]
+type = "noctalia/wallhaven:wallhaven"
+
 [widget.widget]
 type = "profidev/hypr-screen-mirror:widget"
+
+[widget.widget_2]
+type = "thepunkoff/pomodoro:widget"
+
+[widget.widget_3]
+type = "alexander/screen-toolkit:widget"
 
 [widget.workspaces]
 empty_color = "outline"
