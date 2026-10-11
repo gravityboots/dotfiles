@@ -14,6 +14,10 @@ hl.env("QT_SCALE_FACTOR", "1.2")
 -- Paths
 hl.env("HYPRSHOT_DIR", v.home .. "/Pictures/Screenshots")
 
+-- Cursor
+hl.env("XCURSOR_THEME", "macOS")
+hl.env("XCURSOR_SIZE", "24")
+
 -- Qt theming
 hl.env("QT_QPA_PLATFORMTHEME", "qt6ct")
 hl.env("QT_QPA_PLATFORMTHEME_QT5", "qt5ct")

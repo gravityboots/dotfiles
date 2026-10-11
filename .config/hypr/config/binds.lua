@@ -27,15 +27,19 @@ hl.bind(mainMod .. " + SLASH",   hl.dsp.exec_cmd(ipc .. " panel-toggle kenn/keyb
 hl.bind("XF86Launch2",           hl.dsp.exec_cmd(ipc .. " panel-toggle control-center system"))
 
 -- snappy-switcher & hyprexpo
-hl.bind("ALT + Tab", hl.dsp.exec_cmd("snappy-switcher next --mod alt"), { description = "Snappy Switcher" })
+hl.bind("ALT + Tab", hl.dsp.exec_cmd("noctalia msg window-switcher hold"), { description = "Noctalia Window Switcher" })
 hl.bind("SUPER + TAB", function() hl.plugin.scrolloverview.overview("toggle all") end)
+-- hl.bind("ALT + Tab", hl.dsp.exec_cmd("snappy-switcher next --mod alt"), { description = "Snappy Switcher" })
 -- hl.bind("SUPER + TAB", function() hl.plugin.hyprexpo.expo("toggle") end)
 
 -- Utility
-hl.bind("PRINT",                                hl.dsp.exec_cmd("hyprshot -m region -z --no-cursor"))
+hl.bind("PRINT",                                hl.dsp.exec_cmd("hyprshot -m region"))
 hl.bind("SHIFT + PRINT",                        hl.dsp.exec_cmd("hyprshot -m region --raw | swappy -f -"))
 hl.bind(mainMod .. " + PRINT",                  hl.dsp.exec_cmd("hyprshot -m output"))
-hl.bind(mainMod .. " + SHIFT + PRINT",          hl.dsp.exec_cmd("hyprshot -m window"))
+hl.bind(mainMod .. " + SHIFT + PRINT",          hl.dsp.exec_cmd("hyprshot -m output --raw | swappy -f -"))
+hl.bind("CTRL+ PRINT",                          hl.dsp.exec_cmd("hyprshot -m window"))
+hl.bind("CTRL+ SHIFT + PRINT",                  hl.dsp.exec_cmd("hyprshot -m window --raw | swappy -f -"))
+hl.bind(mainMod .. " + SHIFT + G", hl.dsp.exec_cmd(v.home .. "/.local/bin/gamemode-toggle.sh")) -- gamemode toggle with script
 hl.bind(mainMod .. " + SHIFT + R",              hl.dsp.exec_cmd(ipc .. " plugin noctalia/screen_recorder:service all start portal"))
 hl.bind("XF86Calculator",                       hl.dsp.exec_cmd("[float; size 400 800; pin] gnome-calculator"))
 hl.bind(mainMod .. " + XF86Launch2",            hl.dsp.exec_cmd(v.home .. "/.local/bin/rice_flex.sh"))
@@ -85,7 +89,7 @@ hl.bind(mainMod .. " + CTRL + BracketLeft",     hl.dsp.layout("colresize -conf")
 hl.bind(mainMod .. " + CTRL + BracketRight",    hl.dsp.layout("colresize +conf"))
 hl.bind(mainMod .. " + SHIFT + F",              hl.dsp.layout("fit expand"))
 hl.bind(mainMod .. " + Minus",                  hl.dsp.layout("consume_or_expel prev"))
-hl.bind(mainMod .. " + Plus",                   hl.dsp.layout("consume_or_expel next"))
+hl.bind(mainMod .. " + Equal",                  hl.dsp.layout("consume_or_expel next"))
 
 -- Switch workspaces: mainMod + [0-9]
 for i = 1, 9 do

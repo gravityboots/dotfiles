@@ -9,9 +9,10 @@ hl.window_rule({ match = { class = "^(fcitx)$" },   float  = true })
 hl.window_rule({ match = { class = "kitty" },       min_size = "100 100" })
 
 -- Scrolling
-hl.window_rule({ match = { class = "zen" },         scrolling_width = 1.0})
-hl.window_rule({ match = { class = "vesktop" },     scrolling_width = 1.0})
-hl.window_rule({ match = { class = "codium" },      scrolling_width = 1.0})
+hl.window_rule({ match = { class = "zen" },                     scrolling_width = 1.0})
+hl.window_rule({ match = { class = "vesktop" },                 scrolling_width = 1.0})
+hl.window_rule({ match = { class = "codium" },                  scrolling_width = 1.0})
+hl.window_rule({ match = { class = "md.obsidian.Obsidian" },    scrolling_width = 1.0})
 
 -- Float + center + size (+ opacity)
 hl.window_rule({ match = { class = "dev.noctalia.Noctalia" },                   float = true, center = true, size = { 1200, 900 } })
@@ -22,13 +23,15 @@ hl.window_rule({ match = { class = "localsend" },                               
 hl.window_rule({ match = { class = "soundux" },                                 float = true, center = true, size = { 1600, 900 } })
 
 -- Opacity only
-hl.window_rule({ match = { class = "^(Spotify)$" },            opacity = "0.90 0.90" })
-hl.window_rule({ match = { class = "^(vesktop)$" },            opacity = "0.90 0.90" })
-hl.window_rule({ match = { class = "^(Termius)$" },            opacity = "0.90 0.90" })
-hl.window_rule({ match = { class = "codium" },                 opacity = "0.90 0.90" })
-hl.window_rule({ match = { class = "^(org.gnome.Nautilus)$" }, opacity = "0.90 0.90" })
+hl.window_rule({ match = { class = "^(Spotify)$" },             opacity = "0.90 0.90" })
+hl.window_rule({ match = { class = "^(vesktop)$" },             opacity = "0.90 0.90" })
+hl.window_rule({ match = { class = "^(Termius)$" },             opacity = "0.90 0.90" })
+hl.window_rule({ match = { class = "codium" },                  opacity = "0.90 0.90" })
+-- hl.window_rule({ match = { class = "^(org.gnome.Nautilus)$" },  opacity = "0.90 0.90" })
+-- hl.window_rule({ match = { class = "blueman-manager" },         opacity = "0.90 0.90" })
 
 -- Float + center (viewers)
+hl.window_rule({ match = { class = "xdg-desktop-portal-gtk" },  float = true, center = true })
 hl.window_rule({ match = { class = "^(org.gnome.Evince)$" },    float = true, center = true })
 hl.window_rule({ match = { class = "^(previewer)$" },           float = true, center = true })
 hl.window_rule({ match = { class = "^(org.gnome.Showtime)$" },  float = true, center = true })
