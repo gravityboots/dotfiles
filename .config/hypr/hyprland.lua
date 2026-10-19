@@ -16,3 +16,4 @@ require("plugins")
 require("windowrules")
 require("layerrules")
 require("autostart")      -- last: start things after config is applied
+require("gestures")       -- gestures loaded after ipc, etc. ready
