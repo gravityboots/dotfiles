@@ -1,5 +1,4 @@
 {
-    "workbench.colorTheme": "Tokyo Night Blackout",
     "workbench.iconTheme": "catppuccin-mocha",
     "editor.fontFamily": "'JetBrainsMono Nerd Font', 'GeistMono Nerd Font', monospace",
     "terminal.integrated.fontLigatures.fallbackLigatures": [
@@ -87,8 +86,8 @@
     // below from windows vscode
     "explorer.confirmDragAndDrop": false,
     "python.createEnvironment.trigger": "off",
-    "editor.tokenColorCustomizations": { // Below makes italics go away, see Tokyo Night Extension for more details (note by me)
-        "[Tokyo Night]": { // or "[Tokyo Night Storm]"
+    "editor.tokenColorCustomizations": {
+        "[Tokyo Night]": {
             "textMateRules": [{
                 "scope": [
                     "comment",
@@ -106,7 +105,61 @@
                 }
             }]
         },
-        "[Taipei Night]": { // or "[Tokyo Night Storm]"
+        "[Taipei Night]": {
+            "textMateRules": [{
+                "scope": [
+                    "comment",
+                    "meta.var.expr storage.type",
+                    "keyword.control.flow",
+                    "keyword.control.return",
+                    "meta.directive.vue punctuation.separator.key-value.html",
+                    "meta.directive.vue entity.other.attribute-name.html",
+                    "tag.decorator.js entity.name.tag.js",
+                    "tag.decorator.js punctuation.definition.tag.js",
+                    "storage.modifier"
+                ],
+                "settings": {
+                    "fontStyle": ""
+                }
+            }]
+        },
+        "[Tokyo Night (Rec.ITU-709 to P3 gamut)]": {
+            "textMateRules": [{
+                "scope": [
+                    "comment",
+                    "meta.var.expr storage.type",
+                    "keyword.control.flow",
+                    "keyword.control.return",
+                    "meta.directive.vue punctuation.separator.key-value.html",
+                    "meta.directive.vue entity.other.attribute-name.html",
+                    "tag.decorator.js entity.name.tag.js",
+                    "tag.decorator.js punctuation.definition.tag.js",
+                    "storage.modifier"
+                ],
+                "settings": {
+                    "fontStyle": ""
+                }
+            }]
+        },
+        "[Taipei Night (Rec.ITU-709 to P3 gamut)]": {
+            "textMateRules": [{
+                "scope": [
+                    "comment",
+                    "meta.var.expr storage.type",
+                    "keyword.control.flow",
+                    "keyword.control.return",
+                    "meta.directive.vue punctuation.separator.key-value.html",
+                    "meta.directive.vue entity.other.attribute-name.html",
+                    "tag.decorator.js entity.name.tag.js",
+                    "tag.decorator.js punctuation.definition.tag.js",
+                    "storage.modifier"
+                ],
+                "settings": {
+                    "fontStyle": ""
+                }
+            }]
+        },
+        "[Taipei Night Blackout]": {
             "textMateRules": [{
                 "scope": [
                     "comment",
@@ -163,5 +216,6 @@
     "editor.fontSize": 13,
     "qt-core.showWelcomePageOnActivation": false,
     "terminal.integrated.fontLigatures.enabled": true,
+    "workbench.colorTheme": "Taipei Night Blackout",
     // "editor.fontWeight": "450"
 }
