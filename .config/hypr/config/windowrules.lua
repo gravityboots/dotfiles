@@ -18,7 +18,7 @@ hl.window_rule({ match = { class = "md.obsidian.Obsidian" },    scrolling_width 
 hl.window_rule({ match = { class = "dev.noctalia.Noctalia" },                   float = true, center = true, size = { 1200, 900 } })
 hl.window_rule({ match = { class = "^(org.gnome.Calculator)$" },                float = true, center = true, size = { 400, 800 }, opacity = "1.0 0.5" })
 hl.window_rule({ match = { class = "md.obsidian.Obsidian" },                    float = true, center = true, size = { 1600, 900 }, opacity = "0.90 0.90" })
-hl.window_rule({ match = { class = "^(org.prismlauncher.PrismLauncher)$" },     float = true, center = true, size = { 1600, 900 }, opacity = "0.90 0.90" })
+hl.window_rule({ match = { class = "^(org.prismlauncher.PrismLauncher)$" },     float = true, center = true, size = { 1600, 900 }, opacity = "0.90 0.90", rounding = 0 })
 hl.window_rule({ match = { class = "localsend" },                               float = true, center = true, size = { 1600, 900 }, opacity = "0.90 0.90" })
 hl.window_rule({ match = { class = "soundux" },                                 float = true, center = true, size = { 1600, 900 } })
 

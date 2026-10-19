@@ -161,5 +161,7 @@
     "git.enableSmartCommit": true,
     "claudeCode.hideOnboarding": true,
     "editor.fontSize": 13,
-    "qt-core.showWelcomePageOnActivation": false
+    "qt-core.showWelcomePageOnActivation": false,
+    "terminal.integrated.fontLigatures.enabled": true,
+    // "editor.fontWeight": "450"
 }
