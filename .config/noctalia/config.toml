@@ -73,6 +73,7 @@ order = [ "default", "gamemode" ]
         [[bar.default.capsule_group]]
         accordion = false
         accordion_direction = "end"
+        border_width = 1.0
         enabled = true
         fill = "on_primary"
         id = "g1"
@@ -85,10 +86,11 @@ order = [ "default", "gamemode" ]
         [[bar.default.capsule_group]]
         accordion = true
         accordion_direction = "start"
+        border_width = 1.0
         enabled = true
         fill = "surface_variant"
         id = "g2"
-        members = [ "widget_3", "tracker", "widget_2", "printer", "w-engine-widget", "wallhaven", "mpvpaper", "widget" ]
+        members = [ "widget_3", "tracker", "widget_2", "printer", "summary", "widget" ]
         opacity = 0.0
         padding = 0.0
         widget_spacing = 8
@@ -529,12 +531,20 @@ wallpaper_dir = "/home/gravityboots/Pictures/Wallpapers/Disabled"
 [plugin_settings."fel/ocr"]
 languages = "eng+deu+jpn"
 
+[plugin_settings."gravityboots/gwallcards"]
+deck_placement = "attached"
+info_placement = "attached"
+
 [plugin_settings."noctalia/mpvpaper"]
 run_as_systemd = true
 video_directory = "/home/gravityboots/Pictures/Wallpapers"
 
 [plugin_settings."noctalia/wallhaven"]
 api_key = "xYy95K4Ha5rA5pa1YJU0iyTRR8ukRT5C"
+
+[plugin_settings."nomadcxx/gslapper"]
+fade = true
+video_directory = "/home/gravityboots/Pictures/Wallpapers/"
 
 [plugin_settings."profidev/hypr-screen-mirror"]
 panel_open_near_click = true
@@ -547,10 +557,7 @@ w-engine-panel_placement = "attached"
 [plugins]
 auto_update = "all"
 enabled = [
-    "noctalia/mpvpaper",
-    "noctalia/wallhaven",
     "noctalia/screen_recorder",
-    "0lucasmatheus/awwwall",
     "samuelskovbakke/calculator-plus",
     "noctalia/bitwarden",
     "profidev/hypr-screen-mirror",
@@ -569,20 +576,30 @@ enabled = [
     "noctalia/kaomoji",
     "avivbintangaringga/nextboot-selector",
     "riversyx/noctaproton-vpn",
-    "tordex/processes"
+    "tordex/processes",
+    "gravityboots/gwallcards"
 ]
 
     [[plugins.source]]
-    enabled = true
     kind = "git"
     location = "https://github.com/noctalia-dev/official-plugins"
     name = "official"
 
     [[plugins.source]]
-    enabled = true
     kind = "git"
     location = "https://github.com/noctalia-dev/community-plugins"
     name = "community"
+
+    [[plugins.source]]
+    enabled = false
+    kind = "path"
+    location = "~/Projects/Noctalia Plugins/"
+    name = "local-plugins"
+
+    [[plugins.source]]
+    kind = "git"
+    location = "https://github.com/gravityboots/gwallcards"
+    name = "gravityboots"
 
 [shell]
 app_icon_colorize = false
@@ -853,13 +870,13 @@ transition_on_startup = true
     recursive = true
 
     [wallpaper.default]
-    path = "/home/gravityboots/Pictures/Wallpapers/wallhaven-x69x1o.jpg"
+    path = "/home/gravityboots/Pictures/Wallpapers/wallhaven-853vk2.jpg"
 
     [wallpaper.last]
-    path = "/home/gravityboots/Pictures/Wallpapers/wallhaven-x69x1o.jpg"
+    path = "/home/gravityboots/Pictures/Wallpapers/wallhaven-qz11r5.png"
 
     [wallpaper.monitors.eDP-1]
-    path = "/home/gravityboots/Pictures/Wallpapers/wallhaven-x69x1o.jpg"
+    path = "/home/gravityboots/Pictures/Wallpapers/wallhaven-qz11r5.png"
 
 [weather]
 effects = true
@@ -971,6 +988,9 @@ type = "sysmon"
 [widget.spacer]
 interactive = false
 type = "spacer"
+
+[widget.summary]
+type = "gustav0ar/drive-health:summary"
 
 [widget.sysmon]
 show_value = false

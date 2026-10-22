@@ -21,5 +21,5 @@ hl.on("hyprland.start", function()
 
     -- Loop until IPC is ready, then reload hyprpm & disable gamemode noctalia bar
     hl.exec_cmd("sh -c 'for i in $(seq 1 20); do hyprctl -j monitors >/dev/null 2>&1 && break; sleep 0.25; done; hyprpm reload -n'")
-    hl.exec_cmd("sh -c 'sleep 0.5; noctalia msg bar-hide gamemode'")
+    hl.exec_cmd("sh -c 'sleep 1; noctalia msg bar-hide gamemode'")
 end)
